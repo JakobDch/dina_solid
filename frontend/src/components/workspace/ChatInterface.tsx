@@ -47,7 +47,7 @@ export default function ChatInterface(): React.JSX.Element {
 
   // Solid Pod authentication and external catalog
   const { t, i18n } = useTranslation();
-  const { isLoggedIn: isSolidLoggedIn, catalogId, catalogUrl, getAccessToken } = useSolidAuth();
+  const { isLoggedIn: isSolidLoggedIn, getAccessToken } = useSolidAuth();
   const { getKey } = useApiKeys();
   const [serverProvidedKeys, setServerProvidedKeys] = useState<Record<string, boolean>>({});
   const [apiKeyPromptVisible, setApiKeyPromptVisible] = useState(false);
@@ -1263,8 +1263,6 @@ ${data.message || t('chat.needMoreInfo')}`,
           workspace_id: workspaceId,
           user_query: originalUserQuery,
           sparql_query: data.sparql_query,
-          catalog_id: catalogId?.toString(),
-          catalog_url: catalogUrl || ''
         });
 
         console.log('[Agent Solid] Comunica results sent to agent:', response.data);
@@ -1464,9 +1462,7 @@ ${data.message || t('chat.needMoreInfo')}`,
       interactive_mode: interactiveMode.toString(),
       auto_execute_plans: autoExecutePlans.toString(),
       // Solid/Comunica integration parameters
-      solid_mode: (isSolidLoggedIn && !!catalogId).toString(),
-      catalog_id: catalogId?.toString() || '',
-      catalog_url: catalogUrl || '',
+      solid_mode: isSolidLoggedIn.toString(),
     });
 
     if (credentialsRef) {
@@ -1536,9 +1532,7 @@ ${data.message || t('chat.needMoreInfo')}`,
       interactive_mode: interactiveMode.toString(),
       auto_execute_plans: autoExecutePlans.toString(),
       // Include Solid/Comunica parameters for follow-up queries
-      solid_mode: (isSolidLoggedIn && !!catalogId).toString(),
-      catalog_id: catalogId?.toString() || '',
-      catalog_url: catalogUrl || '',
+      solid_mode: isSolidLoggedIn.toString(),
     });
 
     if (credentialsRef) {

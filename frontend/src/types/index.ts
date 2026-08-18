@@ -322,15 +322,6 @@ export interface SolidUserInfo {
   isLoggedIn: boolean;
 }
 
-export interface ExternalCatalog {
-  id: number;
-  title: string;
-  description?: string;
-  /** LDP container URL of the catalog inside the Solid dataspace. */
-  catalog_url: string;
-  /** True for the catalog configured as the deployment default. */
-  is_default?: boolean;
-}
 
 export interface ExternalCatalogStatusEvent {
   message: string;
@@ -390,14 +381,9 @@ export interface ComunicaQueryOptions {
 export interface SolidAuthContextType {
   isLoggedIn: boolean;
   webId: string | undefined;
-  catalogId: number | null;
-  catalogTitle: string | null;
-  catalogUrl: string | null;
   isLoading: boolean;
   login: (issuer: string) => Promise<void>;
   logout: () => Promise<void>;
-  selectCatalog: (id: number, title: string, url?: string) => void;
-  clearCatalog: () => void;
   fetch: typeof fetch;
 }
 

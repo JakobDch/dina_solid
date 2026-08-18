@@ -6,7 +6,6 @@ import DinaLogo from '../../assets/dina_logo_2026.png';
 import { api } from '../../api/apiClient';
 import { useSolidAuth } from '../../contexts/SolidAuthContext';
 import LoginIssuerModal from '../common/LoginIssuerModal';
-import CatalogSelectModal from '../common/CatalogSelectModal';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ApiKeySettingsModal from '../common/ApiKeySettingsModal';
 import { useTranslation } from 'react-i18next';
@@ -28,15 +27,12 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
   const {
     isLoggedIn,
     webId,
-    catalogId,
-    catalogUrl,
     isLoading: authLoading,
     logout
   } = useSolidAuth();
 
   // Modal states
   const [loginModalVisible, setLoginModalVisible] = useState(false);
-  const [catalogModalVisible, setCatalogModalVisible] = useState(false);
   const [apiKeyModalVisible, setApiKeyModalVisible] = useState(false);
 
   // The header can be shown outside a workspace route, so resolve the default
@@ -56,14 +52,6 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
       cancelled = true;
     };
   }, [workspaceIdFromUrl]);
-
-  // A catalog must be selected before the agent can query the dataspace, so
-  // prompt for one as soon as the user is logged in without a selection.
-  useEffect(() => {
-    if (isLoggedIn && !authLoading && catalogId === null) {
-      setCatalogModalVisible(true);
-    }
-  }, [isLoggedIn, authLoading, catalogId]);
 
   // Extract display name from WebID
   const getDisplayName = () => {
@@ -174,34 +162,10 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
             </NavLink>
           </>
         )}
-        {/* Catalog selection - required before the agent can query the dataspace */}
-        {isLoggedIn && catalogId === null && (
+        {isLoggedIn && config.dataspaceUiUrl && (
           <Button
             icon={<DatabaseOutlined />}
-            onClick={() => setCatalogModalVisible(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'linear-gradient(135deg, #C6712F 0%, #d98745 100%)',
-              borderColor: 'transparent',
-              color: '#ffffff',
-              fontWeight: 500,
-              borderRadius: '8px',
-              padding: '0 16px',
-              height: '36px',
-              boxShadow: '0 2px 4px rgba(198, 113, 47, 0.2)'
-            }}
-          >
-            <span>{t('nav.selectCatalog')}</span>
-          </Button>
-        )}
-
-        {/* Selected catalog - opens the dataspace browser in a new tab */}
-        {isLoggedIn && catalogId !== null && (
-          <Button
-            icon={<DatabaseOutlined />}
-            onClick={() => window.open(config.dataspaceUiUrl || catalogUrl || '', '_blank')}
+            onClick={() => window.open(config.dataspaceUiUrl, '_blank')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -303,10 +267,6 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
       <LoginIssuerModal
         visible={loginModalVisible}
         onClose={() => setLoginModalVisible(false)}
-      />
-      <CatalogSelectModal
-        visible={catalogModalVisible}
-        onClose={() => setCatalogModalVisible(false)}
       />
       <ApiKeySettingsModal
         visible={apiKeyModalVisible}

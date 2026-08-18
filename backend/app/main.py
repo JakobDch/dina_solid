@@ -27,7 +27,6 @@ from .config import get_settings
 from .db import engine
 from .routers import (
     agent_router,
-    catalog_router,
     corpus_router,
     sessions_router,
     workspaces_router,
@@ -103,7 +102,6 @@ async def health_check():
 
 
 app.include_router(agent_router.router)
-app.include_router(catalog_router.router)
 app.include_router(corpus_router.router)
 app.include_router(sessions_router.router)
 app.include_router(workspaces_router.router)

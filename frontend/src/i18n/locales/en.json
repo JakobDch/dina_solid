@@ -1,10 +1,8 @@
 {
   "common": {
     "cancel": "Cancel",
-    "delete": "Delete",
     "retry": "Try again",
     "loading": "Loading...",
-    "error": "Error",
     "language": "Language",
     "save": "Save"
   },
@@ -14,7 +12,6 @@
     "startFirstChat": "Start your first chat",
     "signInWithSolid": "Sign in with Solid",
     "signOut": "Sign out",
-    "selectCatalog": "Select catalog",
     "dataCatalog": "Data catalog"
   },
   "landing": {
@@ -40,17 +37,6 @@
     "failed": "Sign-in failed. Please try again.",
     "missingUrl": "Please enter a provider URL.",
     "invalidUrl": "Please enter a valid URL."
-  },
-  "catalog": {
-    "title": "Select a catalog",
-    "intro": "Choose a catalog from the dataspace to send your questions to:",
-    "loading": "Loading catalogs...",
-    "loadFailed": "Catalogs could not be loaded. Please check the connection to the dataspace.",
-    "empty": "No catalogs found in the dataspace.",
-    "emptyTitle": "No catalogs available",
-    "noDescription": "No description available",
-    "select": "Select",
-    "selected": "Selected"
   },
   "chat": {
     "placeholder": "Ask your next question...",
@@ -185,7 +171,6 @@
   },
   "apiKeys": {
     "title": "API keys",
-    "menuItem": "API keys",
     "intro": "Choose a language model provider and paste your own key. Without a key the assistant cannot answer.",
     "privacyNote": "Keys stay in this browser and are sent only with the request that needs them. They are never stored on the server.",
     "stored": "stored",
@@ -196,8 +181,6 @@
     "cleared": "API keys removed",
     "clearAll": "Remove all",
     "ollamaNote": "Ollama models run locally and need no key.",
-    "missingTitle": "No API key",
-    "missingBody": "Add a key for {{provider}} to use this model.",
-    "openSettings": "Open settings"
+    "missingBody": "Add a key for {{provider}} to use this model."
   }
 }

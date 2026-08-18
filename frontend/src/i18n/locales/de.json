@@ -1,10 +1,8 @@
 {
   "common": {
     "cancel": "Abbrechen",
-    "delete": "Löschen",
     "retry": "Erneut versuchen",
     "loading": "Wird geladen...",
-    "error": "Fehler",
     "language": "Sprache",
     "save": "Speichern"
   },
@@ -14,7 +12,6 @@
     "startFirstChat": "Starte den ersten Chat",
     "signInWithSolid": "Mit Solid anmelden",
     "signOut": "Abmelden",
-    "selectCatalog": "Katalog wählen",
     "dataCatalog": "Datenkatalog"
   },
   "landing": {
@@ -40,17 +37,6 @@
     "failed": "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
     "missingUrl": "Bitte gib eine Anbieter-URL ein.",
     "invalidUrl": "Bitte gib eine gültige URL ein."
-  },
-  "catalog": {
-    "title": "Katalog auswählen",
-    "intro": "Wähle einen Katalog aus dem Datenraum, an den deine Fragen gehen sollen:",
-    "loading": "Kataloge werden geladen...",
-    "loadFailed": "Kataloge konnten nicht geladen werden. Bitte prüfe die Verbindung zum Datenraum.",
-    "empty": "Im Datenraum wurden keine Kataloge gefunden.",
-    "emptyTitle": "Keine Kataloge verfügbar",
-    "noDescription": "Keine Beschreibung verfügbar",
-    "select": "Auswählen",
-    "selected": "Ausgewählt"
   },
   "chat": {
     "placeholder": "Stelle deine nächste Frage...",
@@ -185,7 +171,6 @@
   },
   "apiKeys": {
     "title": "API-Schlüssel",
-    "menuItem": "API-Schlüssel",
     "intro": "Wähle einen Anbieter und trage deinen eigenen Schlüssel ein. Ohne Schlüssel kann der Assistent nicht antworten.",
     "privacyNote": "Die Schlüssel bleiben in diesem Browser und werden nur mit der Anfrage gesendet, die sie braucht. Auf dem Server werden sie nie gespeichert.",
     "stored": "hinterlegt",
@@ -196,8 +181,6 @@
     "cleared": "API-Schlüssel entfernt",
     "clearAll": "Alle entfernen",
     "ollamaNote": "Ollama-Modelle laufen lokal und brauchen keinen Schlüssel.",
-    "missingTitle": "Kein API-Schlüssel",
-    "missingBody": "Hinterlege einen Schlüssel für {{provider}}, um dieses Modell zu nutzen.",
-    "openSettings": "Einstellungen öffnen"
+    "missingBody": "Hinterlege einen Schlüssel für {{provider}}, um dieses Modell zu nutzen."
   }
 }

@@ -483,10 +483,9 @@ class AgentContext:
         parts.append("=== SESSION CONTEXT ===")
         parts.append(f"Session ID: {self.session_id or 'new session'}")
         parts.append(f"Workspace: {self.workspace_id}")
-        if self.solid_mode:
-            parts.append(f"Mode: Solid/Comunica (catalog: {self.catalog_id})")
-        else:
-            parts.append("Mode: local (GraphDB)")
+        parts.append(
+            f"Signed in: {'yes' if self.solid_auth_token else 'no (public data only)'}"
+        )
 
         # Data extractions summary
         parts.append("\n=== EXTRACTED DATA ===")
@@ -1178,134 +1177,6 @@ class OrchestratingAgent:
     # =========================================================================
     # Solid/Comunica Integration Methods
     # =========================================================================
-
-    async def _call_catalog_query(
-        self,
-        user_query: str,
-        on_status: Optional[callable] = None
-    ) -> Dict[str, Any]:
-        """
-        Call the external catalog's /api/chat/query endpoint.
-        The external catalog generates the SPARQL query and returns dataset URLs.
-
-        This mirrors the frontend's useExternalCatalogQuery hook behavior.
-
-        Args:
-            user_query: The user's natural language query
-            on_status: Optional callback for status updates
-
-        Returns:
-            Dict containing:
-            - sparql_query: The generated SPARQL query
-            - dataset_urls: List of dataset URLs for Comunica execution
-            - summary: Summary message
-            - models_used: List of models used
-            - keywords_used: List of keywords used
-        """
-        import httpx
-        import json
-
-        if not self.context.catalog_id:
-            raise ValueError("Catalog ID required for catalog query")
-
-        # Use internal Docker URL to reach the external catalog
-        catalog_internal_url = os.environ.get(
-            "SEMANTIC_DATA_CATALOG_INTERNAL_URL",
-            self.context.catalog_url or "http://host.docker.internal:8000"
-        )
-
-        logger.info(f"[Agent Solid] Calling catalog query at {catalog_internal_url}/api/chat/query for: '{user_query[:50]}...'")
-
-        result = {
-            "sparql_query": None,
-            "dataset_urls": [],
-            "summary": "",
-            "models_used": [],
-            "keywords_used": [],
-            "execution_method": None
-        }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                # Make SSE request to the catalog's query endpoint
-                async with client.stream(
-                    "POST",
-                    f"{catalog_internal_url}/api/chat/query",
-                    json={
-                        "message": user_query,
-                        "catalog_id": int(self.context.catalog_id),
-                        "webid": ""  # WebID not needed for backend calls
-                    },
-                    timeout=60.0,
-                    headers={"Accept": "text/event-stream"}
-                ) as response:
-                    response.raise_for_status()
-
-                    current_event_type = ""
-
-                    async for line in response.aiter_lines():
-                        line = line.strip()
-                        if not line:
-                            continue
-
-                        if line.startswith("event:"):
-                            current_event_type = line[6:].strip()
-                            logger.debug(f"[Agent Solid] SSE event type: {current_event_type}")
-
-                        elif line.startswith("data:"):
-                            try:
-                                data_str = line[5:].strip()
-                                data = json.loads(data_str)
-
-                                if current_event_type == "status":
-                                    # Status update from catalog
-                                    if on_status and data.get("message"):
-                                        await on_status(data["message"])
-
-                                elif current_event_type == "comunica_execution":
-                                    # Catalog returned query for Comunica execution
-                                    logger.info(f"[Agent Solid] Received comunica_execution event")
-                                    if data.get("sparql_query"):
-                                        result["sparql_query"] = data["sparql_query"]
-                                    if data.get("dataset_urls"):
-                                        result["dataset_urls"] = data["dataset_urls"]
-                                    result["summary"] = data.get("summary", "Query ready to execute")
-                                    result["execution_method"] = "comunica"
-
-                                elif current_event_type == "complete":
-                                    # Complete event - may contain query info
-                                    logger.info(f"[Agent Solid] Received complete event")
-
-                                    if data.get("execution_method") == "comunica":
-                                        if data.get("sparql_query"):
-                                            result["sparql_query"] = data["sparql_query"]
-                                        if data.get("dataset_urls"):
-                                            result["dataset_urls"] = data["dataset_urls"]
-                                        result["execution_method"] = "comunica"
-
-                                    if data.get("sparql_query") and not result["sparql_query"]:
-                                        result["sparql_query"] = data["sparql_query"]
-
-                                    result["summary"] = data.get("summary", result["summary"])
-                                    result["models_used"] = data.get("models_used", [])
-                                    result["keywords_used"] = data.get("keywords_used", [])
-
-                            except json.JSONDecodeError as e:
-                                logger.warning(f"[Agent Solid] Failed to parse SSE data: {e}")
-                                continue
-
-            logger.info(
-                f"[Agent Solid] Catalog query result: "
-                f"query={'yes' if result['sparql_query'] else 'no'}, "
-                f"{len(result['dataset_urls'])} dataset URLs, "
-                f"method={result['execution_method']}"
-            )
-
-            return result
-
-        except httpx.HTTPError as e:
-            logger.error(f"[Agent Solid] Catalog query failed: {e}")
-            raise
 
     async def continue_plan_execution(
         self,
@@ -2163,8 +2034,10 @@ Reply with GLEICHE_DATEN or ANDERE_DATEN and nothing else:"""
             }, "pipeline_update")
 
             # 2. Create Catalog Agent and retrieve models
-            # Auth token from Solid OIDC session for authenticated catalog access
-            auth_token = self.context.solid_auth_token if self.context.solid_mode else None
+            # Auth token from the user's Solid session. Used whenever one is
+            # present: most of the dataspace is readable only to an authorised
+            # WebID, and withholding the token would silently hide those pods.
+            auth_token = self.context.solid_auth_token or None
 
             # Pass cached models from previous queries to avoid re-fetching
             cached_models = self.context.fetched_models_cache if self.context.fetched_models_cache else None
