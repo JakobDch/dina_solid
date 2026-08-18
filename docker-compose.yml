@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-app}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-app}
+      - POSTGRES_DB=${POSTGRES_DB:-app}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-app}", "-d", "${POSTGRES_DB:-app}", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Caches result sets that are too large to keep in the session context.
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./backend/app:/code/app
+      - ./storage:/storage
+    environment:
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@db:5432/${POSTGRES_DB:-app}
+      - REDIS_URL=redis://redis:6379/2
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

@@ -1,0 +1,398 @@
+[
+  {
+    "id": 1,
+    "anfrage": "Give me all products from the electronics category with their prices. Return product name and price in two columns.",
+    "sparql_query": "PREFIX shop: <http://fictional.shop/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?productName ?price\nWHERE {\n  ?product a shop:Product ;\n           shop:productCategory \"Electronics\"^^xsd:string ;\n           shop:productName ?productName ;\n           shop:productPrice ?price .\n}",
+    "semantic_models": [
+      "shop_product"
+    ],
+    "semantic_models_content": {
+      "shop_product": "@prefix shop: <http://fictional.shop/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nshop:Product shop:productId xsd:string ;\n    shop:productName xsd:string ;\n    shop:productPrice xsd:decimal ;\n    shop:productCategory xsd:string ;\n    shop:stockQuantity xsd:integer ;\n    shop:productDescription xsd:string ;\n    shop:manufacturerName xsd:string ;\n    shop:dateAdded xsd:date ."
+    }
+  },
+  {
+    "id": 2,
+    "anfrage": "How many students are enrolled in the Computer Science department? Return a single count.",
+    "sparql_query": "PREFIX uni: <http://fictional.university/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT (COUNT(?student) AS ?numberOfStudents)\nWHERE {\n  ?student a uni:Student ;\n           uni:forDepartment ?department .\n\n  ?department a uni:Department ;\n              uni:departmentName \"Computer Science\"^^xsd:string .\n}",
+    "semantic_models": [
+      "university_student"
+    ],
+    "semantic_models_content": {
+      "university_student": "@prefix uni: <http://fictional.university/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nuni:Student uni:studentId xsd:string ;\n    uni:studentFirstName xsd:string ;\n    uni:studentLastName xsd:string ;\n    uni:studentDateOfBirth xsd:date ;\n    uni:enrolledDepartmentId xsd:string ;\n    uni:studentEnrollmentDate xsd:date ;\n    uni:studentEmail xsd:string ;\n    uni:forDepartment uni:Department .\n\nuni:Department uni:departmentName xsd:string ."
+    }
+  },
+  {
+    "id": 3,
+    "anfrage": "List all appointments with Dr. Smith or Dr. Johnson. Show patient ID, doctor name, and appointment date.",
+    "sparql_query": "PREFIX med: <http://fictional.healthcare/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?patientID ?doctorName ?appointmentDate\nWHERE {\n  ?appointment a med:Appointment ;\n               med:forDoctor ?doctor ;\n               med:appointmentPatientId ?patientID ;\n               med:appointmentDate ?appointmentDate .\n\n  ?doctor a med:Doctor ;\n          med:doctorName ?doctorName .\n\n  FILTER(?doctorName = \"Dr. Smith\"^^xsd:string || ?doctorName = \"Dr. Johnson\"^^xsd:string)\n}",
+    "semantic_models": [
+      "healthcare_appointment"
+    ],
+    "semantic_models_content": {
+      "healthcare_appointment": "@prefix med: <http://fictional.healthcare/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nmed:Appointment med:appointmentId xsd:string ;\n    med:appointmentDate xsd:dateTime ;\n    med:appointmentDuration xsd:integer ;\n    med:appointmentPatientId xsd:string ;\n    med:appointmentDoctorId xsd:string ;\n    med:appointmentType xsd:string ;\n    med:appointmentStatus xsd:string ;\n    med:forDoctor med:Doctor .\n\nmed:Doctor med:doctorName xsd:string ."
+    }
+  },
+  {
+    "id": 4,
+    "anfrage": "Get the average temperature recorded by all sensors in the city center area. Return a single value.",
+    "sparql_query": "PREFIX smart: <http://fictional.smartcity/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT (AVG(?temp) AS ?averageTemperature)\nWHERE {\n  ?sensor a smart:TemperatureSensor ;\n          smart:sensorLocation \"City Center\"^^xsd:string .\n\n  ?reading a smart:TemperatureReading ;\n           smart:forSensor ?sensor ;\n           smart:temperatureValue ?temp .\n}",
+    "semantic_models": [
+      "smartcity_temperaturesensor",
+      "smartcity_temperaturereading"
+    ],
+    "semantic_models_content": {
+      "smartcity_temperaturesensor": "@prefix smart: <http://fictional.smartcity/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nsmart:TemperatureSensor smart:sensorId xsd:string ;\n    smart:sensorLocation xsd:string ;\n    smart:sensorLatitude xsd:decimal ;\n    smart:sensorLongitude xsd:decimal ;\n    smart:sensorOperational xsd:boolean ;\n    smart:sensorInstalledOn xsd:date .",
+      "smartcity_temperaturereading": "@prefix smart: <http://fictional.smartcity/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nsmart:TemperatureReading smart:readingId xsd:string ;\n    smart:temperatureValue xsd:decimal ;\n    smart:readingTimestamp xsd:dateTime ;\n    smart:temperatureUnit xsd:string ;\n    smart:readingSensorId xsd:string ;\n    smart:forSensor smart:TemperatureSensor .\n\nsmart:TemperatureSensor smart:sensorId xsd:string ."
+    }
+  },
+  {
+    "id": 5,
+    "anfrage": "Find all books published after 2020, optionally include their ISBN if available. Show book title, publication year, and ISBN.",
+    "sparql_query": "PREFIX lib: <http://fictional.library/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?title ?publicationYear ?isbn\nWHERE {\n  ?book a lib:Book ;\n        lib:bookTitle ?title ;\n        lib:publicationYear ?publicationYear .\n\n  OPTIONAL { ?book lib:bookISBN ?isbn . }\n\n  FILTER(?publicationYear > 2020)\n}\nORDER BY DESC(?publicationYear)",
+    "semantic_models": [
+      "library_book"
+    ],
+    "semantic_models_content": {
+      "library_book": "@prefix lib: <http://fictional.library/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nlib:Book lib:bookId xsd:string ;\n    lib:bookTitle xsd:string ;\n    lib:bookISBN xsd:string ;\n    lib:publicationYear xsd:integer ;\n    lib:authorName xsd:string ;\n    lib:bookGenre xsd:string ;\n    lib:pageCount xsd:integer ;\n    lib:bookAvailable xsd:boolean ."
+    }
+  },
+  {
+    "id": 6,
+    "anfrage": "Show me the total sales amount per product category for the last quarter. Display category name and total sales amount.",
+    "sparql_query": "PREFIX ecom: <http://fictional.ecommerce/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?categoryName (SUM(?amount) AS ?totalSales)\nWHERE {\n  ?order a ecom:Order ;\n         ecom:orderDate ?orderDate .\n\n  ?item a ecom:OrderItem ;\n        ecom:forOrder ?order ;\n        ecom:forProduct ?product ;\n        ecom:salesAmount ?amount .\n\n  ?product a ecom:Product ;\n           ecom:forCategory ?category .\n\n  ?category a ecom:Category ;\n            ecom:categoryName ?categoryName .\n\n  FILTER(?orderDate >= \"2024-10-01T00:00:00\"^^xsd:dateTime && ?orderDate <= \"2024-12-31T23:59:59\"^^xsd:dateTime)\n}\nGROUP BY ?categoryName\nORDER BY DESC(?totalSales)",
+    "semantic_models": [
+      "ecommerce_order",
+      "ecommerce_orderitem",
+      "ecommerce_product"
+    ],
+    "semantic_models_content": {
+      "ecommerce_order": "@prefix ecom: <http://fictional.ecommerce/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\necom:Order ecom:orderId xsd:string ;\n    ecom:orderDate xsd:dateTime ;\n    ecom:orderCustomerId xsd:string ;\n    ecom:orderTotalAmount xsd:decimal ;\n    ecom:orderStatus xsd:string .",
+      "ecommerce_orderitem": "@prefix ecom: <http://fictional.ecommerce/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\necom:OrderItem ecom:orderItemId xsd:string ;\n    ecom:orderItemOrderId xsd:string ;\n    ecom:orderItemProductId xsd:string ;\n    ecom:itemQuantity xsd:integer ;\n    ecom:salesAmount xsd:decimal ;\n    ecom:itemDiscount xsd:decimal ;\n    ecom:forOrder ecom:Order ;\n    ecom:forProduct ecom:Product .\n\necom:Order ecom:orderId xsd:string .\n\necom:Product ecom:productName xsd:string .",
+      "ecommerce_product": "@prefix ecom: <http://fictional.ecommerce/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\necom:Product ecom:productId xsd:string ;\n    ecom:productName xsd:string ;\n    ecom:productCategoryId xsd:string ;\n    ecom:productUnitPrice xsd:decimal ;\n    ecom:productStockLevel xsd:integer ;\n    ecom:productWeight xsd:decimal ;\n    ecom:forCategory ecom:Category .\n\necom:Category ecom:categoryName xsd:string ."
+    }
+  },
+  {
+    "id": 7,
+    "anfrage": "List all employees who work in the Engineering department or have a salary above 80000. Show employee name and department.",
+    "sparql_query": "PREFIX corp: <http://fictional.corporation/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?employeeName ?departmentName\nWHERE {\n  ?employee a corp:Employee ;\n            corp:employeeName ?employeeName ;\n            corp:forDepartment ?dept .\n\n  ?dept a corp:Department ;\n        corp:departmentName ?departmentName .\n\n  OPTIONAL { ?employee corp:employeeSalary ?salary . }\n\n  FILTER(?departmentName = \"Engineering\"^^xsd:string || ?salary > 80000)\n}",
+    "semantic_models": [
+      "corporate_employee"
+    ],
+    "semantic_models_content": {
+      "corporate_employee": "@prefix corp: <http://fictional.corporation/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\ncorp:Employee corp:employeeId xsd:string ;\n    corp:employeeName xsd:string ;\n    corp:employeeEmail xsd:string ;\n    corp:employeeSalary xsd:decimal ;\n    corp:employeeHireDate xsd:date ;\n    corp:employeeDepartmentId xsd:string ;\n    corp:employeeManagerId xsd:string ;\n    corp:employeeJobTitle xsd:string ;\n    corp:forDepartment corp:Department .\n\ncorp:Department corp:departmentName xsd:string ."
+    }
+  },
+  {
+    "id": 8,
+    "anfrage": "Get the top 5 most borrowed books from the library along with the number of times they were borrowed. Return book title and borrow count.",
+    "sparql_query": "PREFIX bib: <http://fictional.bibliography/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?bookTitle (COUNT(?loan) AS ?borrowCount)\nWHERE {\n  ?loan a bib:Loan ;\n        bib:forBook ?book .\n\n  ?book a bib:Book ;\n        bib:bookTitle ?bookTitle .\n}\nGROUP BY ?bookTitle\nORDER BY DESC(?borrowCount)\nLIMIT 5",
+    "semantic_models": [
+      "bibliography_loan"
+    ],
+    "semantic_models_content": {
+      "bibliography_loan": "@prefix bib: <http://fictional.bibliography/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nbib:Loan bib:loanId xsd:string ;\n    bib:loanBookId xsd:string ;\n    bib:loanMemberId xsd:string ;\n    bib:loanDate xsd:date ;\n    bib:loanDueDate xsd:date ;\n    bib:loanReturnDate xsd:date ;\n    bib:loanLateFee xsd:decimal ;\n    bib:forBook bib:Book .\n\nbib:Book bib:bookTitle xsd:string ."
+    }
+  },
+  {
+    "id": 9,
+    "anfrage": "Find all research projects funded by grants over 100000 euros that started in 2023. Show project title, funding amount, and principal investigator name.",
+    "sparql_query": "PREFIX res: <http://fictional.research/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?projectTitle ?fundingAmount ?investigatorName\nWHERE {\n  ?project a res:ResearchProject ;\n           res:projectTitle ?projectTitle ;\n           res:projectStartDate ?startDate ;\n           res:forResearcher ?investigator ;\n           res:forGrant ?grant .\n\n  ?grant a res:Grant ;\n         res:grantAmount ?fundingAmount .\n\n  ?investigator a res:Researcher ;\n                res:researcherFullName ?investigatorName .\n\n  FILTER(?fundingAmount > 100000 && ?startDate >= \"2023-01-01\"^^xsd:date && ?startDate <= \"2023-12-31\"^^xsd:date)\n}\nORDER BY DESC(?fundingAmount)",
+    "semantic_models": [
+      "research_researchproject"
+    ],
+    "semantic_models_content": {
+      "research_researchproject": "@prefix res: <http://fictional.research/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nres:ResearchProject res:projectId xsd:string ;\n    res:projectTitle xsd:string ;\n    res:projectDescription xsd:string ;\n    res:projectStartDate xsd:date ;\n    res:projectEndDate xsd:date ;\n    res:projectLeaderId xsd:string ;\n    res:projectGrantId xsd:string ;\n    res:projectField xsd:string ;\n    res:forResearcher res:Researcher ;\n    res:forGrant res:Grant .\n\nres:Researcher res:researcherFullName xsd:string .\n\nres:Grant res:grantAmount xsd:decimal ."
+    }
+  },
+  {
+    "id": 10,
+    "anfrage": "Show all restaurants in Berlin with a rating of 4.5 or higher, including their cuisine type. Return restaurant name, rating, and cuisine.",
+    "sparql_query": "PREFIX food: <http://fictional.food/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?restaurantName ?rating ?cuisineType\nWHERE {\n  ?restaurant a food:Restaurant ;\n              food:restaurantName ?restaurantName ;\n              food:restaurantCity \"Berlin\"^^xsd:string ;\n              food:restaurantRating ?rating ;\n              food:restaurantCuisine ?cuisineType .\n\n  FILTER(?rating >= 4.5)\n}\nORDER BY DESC(?rating)",
+    "semantic_models": [
+      "food_restaurant"
+    ],
+    "semantic_models_content": {
+      "food_restaurant": "@prefix food: <http://fictional.food/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nfood:Restaurant food:restaurantId xsd:string ;\n    food:restaurantName xsd:string ;\n    food:restaurantCity xsd:string ;\n    food:restaurantAddress xsd:string ;\n    food:restaurantRating xsd:decimal ;\n    food:restaurantCuisine xsd:string ;\n    food:restaurantPriceRange xsd:string ;\n    food:restaurantPhone xsd:string ;\n    food:restaurantOpeningHours xsd:string ."
+    }
+  },
+  {
+    "id": 11,
+    "anfrage": "List all vehicles that are either electric or have fuel consumption below 5 liters per 100km. Show vehicle model, fuel type, and consumption.",
+    "sparql_query": "PREFIX auto: <http://fictional.automotive/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?model ?fuelType ?consumption\nWHERE {\n  ?vehicle a auto:Vehicle ;\n           auto:vehicleModel ?model ;\n           auto:vehicleFuelType ?fuelType ;\n           auto:vehicleFuelConsumption ?consumption .\n\n  FILTER(?fuelType = \"Electric\"^^xsd:string || ?consumption < 5.0)\n}\nORDER BY ?consumption",
+    "semantic_models": [
+      "automotive_vehicle"
+    ],
+    "semantic_models_content": {
+      "automotive_vehicle": "@prefix auto: <http://fictional.automotive/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nauto:Vehicle auto:vehicleId xsd:string ;\n    auto:vehicleModel xsd:string ;\n    auto:vehicleManufacturer xsd:string ;\n    auto:vehicleFuelType xsd:string ;\n    auto:vehicleFuelConsumption xsd:decimal ;\n    auto:vehicleEngineSize xsd:decimal ;\n    auto:vehicleProductionYear xsd:integer ;\n    auto:vehicleCategory xsd:string ;\n    auto:vehicleColor xsd:string ."
+    }
+  },
+  {
+    "id": 12,
+    "anfrage": "Create a full name by combining first and last names of all athletes who won medals in 2024. Show the concatenated full name and medal type.",
+    "sparql_query": "PREFIX sport: <http://fictional.sports/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT (CONCAT(?firstName, \" \", ?lastName) AS ?fullName) ?medalType\nWHERE {\n  ?athlete a sport:Athlete ;\n           sport:athleteFirstName ?firstName ;\n           sport:athleteLastName ?lastName .\n\n  ?medal a sport:Medal ;\n         sport:forAthlete ?athlete ;\n         sport:medalType ?medalType ;\n         sport:medalYear 2024 .\n}\nORDER BY ?lastName",
+    "semantic_models": [
+      "sports_medal"
+    ],
+    "semantic_models_content": {
+      "sports_medal": "@prefix sport: <http://fictional.sports/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nsport:Medal sport:medalId xsd:string ;\n    sport:medalType xsd:string ;\n    sport:medalYear xsd:integer ;\n    sport:medalCompetitionId xsd:string ;\n    sport:medalAthleteId xsd:string ;\n    sport:medalDiscipline xsd:string ;\n    sport:forAthlete sport:Athlete .\n\nsport:Athlete sport:athleteFirstName xsd:string ;\n    sport:athleteLastName xsd:string ."
+    }
+  },
+  {
+    "id": 13,
+    "anfrage": "Find all hotels in Paris that have WiFi available. Show hotel name and price per night, or 'Price not available' if price is missing.",
+    "sparql_query": "PREFIX hotel: <http://fictional.hospitality/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?hotelName (COALESCE(?priceValue, \"Price not available\") AS ?price)\nWHERE {\n  ?hotel a hotel:Hotel ;\n         hotel:hotelName ?hotelName ;\n         hotel:hotelCity \"Paris\"^^xsd:string ;\n         hotel:hotelWiFiAvailable true .\n\n  OPTIONAL { ?hotel hotel:hotelPricePerNight ?priceValue . }\n}",
+    "semantic_models": [
+      "hospitality_hotel"
+    ],
+    "semantic_models_content": {
+      "hospitality_hotel": "@prefix hotel: <http://fictional.hospitality/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nhotel:Hotel hotel:hotelId xsd:string ;\n    hotel:hotelName xsd:string ;\n    hotel:hotelCity xsd:string ;\n    hotel:hotelStarRating xsd:integer ;\n    hotel:hotelPricePerNight xsd:decimal ;\n    hotel:hotelWiFiAvailable xsd:boolean ;\n    hotel:hotelParkingAvailable xsd:boolean ;\n    hotel:hotelRoomCount xsd:integer ;\n    hotel:hotelAddress xsd:string ."
+    }
+  },
+  {
+    "id": 14,
+    "anfrage": "Get all movies with average rating above 3.0. Exclude movies that are marked as deleted. Return movie title and average rating.",
+    "sparql_query": "PREFIX film: <http://fictional.cinema/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?movieTitle (AVG(?ratingValue) AS ?avgRating)\nWHERE {\n  ?movie a film:Movie ;\n         film:movieTitle ?movieTitle ;\n         film:movieDeleted false .\n\n  ?review a film:Review ;\n          film:forMovie ?movie ;\n          film:reviewRating ?ratingValue .\n}\nGROUP BY ?movieTitle\nHAVING (AVG(?ratingValue) > 3.0)\nORDER BY DESC(?avgRating)",
+    "semantic_models": [
+      "cinema_movie",
+      "cinema_review"
+    ],
+    "semantic_models_content": {
+      "cinema_movie": "@prefix film: <http://fictional.cinema/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nfilm:Movie film:movieId xsd:string ;\n    film:movieTitle xsd:string ;\n    film:movieReleaseYear xsd:integer ;\n    film:movieDirectorName xsd:string ;\n    film:movieGenre xsd:string ;\n    film:movieDuration xsd:integer ;\n    film:movieDeleted xsd:boolean .",
+      "cinema_review": "@prefix film: <http://fictional.cinema/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nfilm:Review film:reviewId xsd:string ;\n    film:reviewRating xsd:decimal ;\n    film:reviewText xsd:string ;\n    film:reviewAuthor xsd:string ;\n    film:reviewDate xsd:date ;\n    film:reviewMovieId xsd:string ;\n    film:forMovie film:Movie .\n\nfilm:Movie film:movieTitle xsd:string ."
+    }
+  },
+  {
+    "id": 15,
+    "anfrage": "Find all courses taught by professors who have a PhD. Show course name, professor name, and academic title.",
+    "sparql_query": "PREFIX edu: <http://fictional.education/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?courseName ?professorName ?academicTitle\nWHERE {\n  ?course a edu:Course ;\n          edu:courseName ?courseName ;\n          edu:taughtBy ?professor .\n\n  ?professor a edu:Professor ;\n             edu:professorName ?professorName ;\n             edu:professorAcademicTitle ?academicTitle .\n\n  FILTER REGEX(?academicTitle, \"PhD\", \"i\")\n}",
+    "semantic_models": [
+      "education_course",
+      "education_professor"
+    ],
+    "semantic_models_content": {
+      "education_course": "@prefix edu: <http://fictional.education/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nedu:Course edu:courseId xsd:string ;\n    edu:courseName xsd:string ;\n    edu:courseCode xsd:string ;\n    edu:courseCredits xsd:integer ;\n    edu:courseProfessorId xsd:string ;\n    edu:courseSemester xsd:string ;\n    edu:courseMaxStudents xsd:integer ;\n    edu:courseDescription xsd:string ;\n    edu:taughtBy edu:Professor .\n\nedu:Professor edu:professorName xsd:string .",
+      "education_professor": "@prefix edu: <http://fictional.education/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nedu:Professor edu:professorId xsd:string ;\n    edu:professorName xsd:string ;\n    edu:professorAcademicTitle xsd:string ;\n    edu:professorDepartment xsd:string ;\n    edu:professorOfficeNumber xsd:string ;\n    edu:professorEmail xsd:string ."
+    }
+  },
+  {
+    "id": 16,
+    "anfrage": "Show all products that have never been ordered. Display product name and stock quantity.",
+    "sparql_query": "PREFIX store: <http://fictional.store/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?productName ?stockQuantity\nWHERE {\n  ?product a store:Product ;\n           store:productName ?productName ;\n           store:productStockQuantity ?stockQuantity .\n\n  FILTER NOT EXISTS {\n    ?orderLine a store:OrderLine ;\n               store:forProduct ?product .\n  }\n}\nORDER BY DESC(?stockQuantity)",
+    "semantic_models": [
+      "store_product",
+      "store_orderline"
+    ],
+    "semantic_models_content": {
+      "store_product": "@prefix store: <http://fictional.store/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nstore:Product store:productId xsd:string ;\n    store:productName xsd:string ;\n    store:productStockQuantity xsd:integer ;\n    store:productPrice xsd:decimal ;\n    store:productSKU xsd:string ;\n    store:productCategory xsd:string ;\n    store:productWeight xsd:decimal .",
+      "store_orderline": "@prefix store: <http://fictional.store/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nstore:OrderLine store:orderLineId xsd:string ;\n    store:orderLineProductId xsd:string ;\n    store:orderLineQuantity xsd:integer ;\n    store:orderLineTotal xsd:decimal ;\n    store:forProduct store:Product .\n\nstore:Product store:productName xsd:string ."
+    }
+  },
+  {
+    "id": 17,
+    "anfrage": "Extract the year from publication dates and count how many articles were published each year after 2018. Show year and article count.",
+    "sparql_query": "PREFIX pub: <http://fictional.publication/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT (YEAR(?pubDate) AS ?year) (COUNT(?article) AS ?articleCount)\nWHERE {\n  ?article a pub:Article ;\n           pub:articlePublicationDate ?pubDate .\n\n  FILTER(YEAR(?pubDate) > 2018)\n}\nGROUP BY (YEAR(?pubDate))\nORDER BY DESC(?year)",
+    "semantic_models": [
+      "publication_article"
+    ],
+    "semantic_models_content": {
+      "publication_article": "@prefix pub: <http://fictional.publication/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\npub:Article pub:articleId xsd:string ;\n    pub:articleTitle xsd:string ;\n    pub:articleAbstract xsd:string ;\n    pub:articlePublicationDate xsd:date ;\n    pub:articleAuthor xsd:string ;\n    pub:articleJournal xsd:string ;\n    pub:articleDOI xsd:string ;\n    pub:articleCitationCount xsd:integer ."
+    }
+  },
+  {
+    "id": 18,
+    "anfrage": "Find all flights from London with a layover duration. Calculate total flight time including layover. Show flight number, destination, and total time.",
+    "sparql_query": "PREFIX flight: <http://fictional.aviation/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?flightNumber ?destination (?flightDuration + ?layoverMinutes AS ?totalTime)\nWHERE {\n  ?flight a flight:Flight ;\n          flight:flightNumber ?flightNumber ;\n          flight:flightDepartureCity \"London\"^^xsd:string ;\n          flight:flightArrivalCity ?destination ;\n          flight:flightDuration ?flightDuration ;\n          flight:flightLayoverMinutes ?layoverMinutes .\n\n  FILTER(?layoverMinutes > 0)\n}\nORDER BY DESC(?totalTime)",
+    "semantic_models": [
+      "aviation_flight"
+    ],
+    "semantic_models_content": {
+      "aviation_flight": "@prefix flight: <http://fictional.aviation/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nflight:Flight flight:flightId xsd:string ;\n    flight:flightNumber xsd:string ;\n    flight:flightDepartureCity xsd:string ;\n    flight:flightArrivalCity xsd:string ;\n    flight:flightDepartureTime xsd:dateTime ;\n    flight:flightArrivalTime xsd:dateTime ;\n    flight:flightDuration xsd:integer ;\n    flight:flightAirline xsd:string ;\n    flight:flightLayoverMinutes xsd:integer ;\n    flight:flightLayoverAirport xsd:string ."
+    }
+  },
+  {
+    "id": 19,
+    "anfrage": "List all properties with their landlords. If a property has a manager, show the manager name, otherwise show the landlord name.",
+    "sparql_query": "PREFIX estate: <http://fictional.realestate/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?propertyAddress (IF(BOUND(?managerName), ?managerName, ?landlordName) AS ?responsiblePerson)\nWHERE {\n  ?property a estate:Property ;\n            estate:propertyAddress ?propertyAddress ;\n            estate:ownedBy ?landlord .\n\n  ?landlord a estate:Landlord ;\n            estate:landlordName ?landlordName .\n\n  OPTIONAL { ?property estate:propertyManagerName ?managerName . }\n}",
+    "semantic_models": [
+      "realestate_property"
+    ],
+    "semantic_models_content": {
+      "realestate_property": "@prefix estate: <http://fictional.realestate/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nestate:Property estate:propertyId xsd:string ;\n    estate:propertyAddress xsd:string ;\n    estate:propertySquareMeters xsd:decimal ;\n    estate:propertyRoomCount xsd:integer ;\n    estate:propertyRentPrice xsd:decimal ;\n    estate:propertyLandlordId xsd:string ;\n    estate:propertyManagerName xsd:string ;\n    estate:propertyAvailable xsd:boolean ;\n    estate:ownedBy estate:Landlord .\n\nestate:Landlord estate:landlordName xsd:string ."
+    }
+  },
+  {
+    "id": 20,
+    "anfrage": "Find departments with more than 10 employees and average salary above 50000. Show department name, employee count, and average salary.",
+    "sparql_query": "PREFIX org: <http://fictional.organization/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?deptName (COUNT(?employee) AS ?empCount) (AVG(?salary) AS ?avgSalary)\nWHERE {\n  ?employee a org:Employee ;\n            org:worksIn ?department ;\n            org:employeeSalary ?salary .\n\n  ?department a org:Department ;\n              org:departmentName ?deptName .\n}\nGROUP BY ?deptName\nHAVING (COUNT(?employee) > 10 && AVG(?salary) > 50000)\nORDER BY DESC(?avgSalary)",
+    "semantic_models": [
+      "organization_employee"
+    ],
+    "semantic_models_content": {
+      "organization_employee": "@prefix org: <http://fictional.organization/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\norg:Employee org:employeeId xsd:string ;\n    org:employeeName xsd:string ;\n    org:employeeSalary xsd:decimal ;\n    org:employeePosition xsd:string ;\n    org:employeeDepartmentId xsd:string ;\n    org:employeeHireDate xsd:date ;\n    org:employeeEmail xsd:string ;\n    org:worksIn org:Department .\n\norg:Department org:departmentName xsd:string ."
+    }
+  },
+  {
+    "id": 21,
+    "anfrage": "Show all books borrowed by members from Germany. Display book title, author, and member name.",
+    "sparql_query": "PREFIX lib: <http://fictional.library/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?bookTitle ?bookAuthor ?memberName\nWHERE {\n  ?book a lib:Book ;\n        lib:bookTitle ?bookTitle ;\n        lib:bookAuthor ?bookAuthor .\n\n  ?loan a lib:Loan ;\n        lib:forBook ?book ;\n        lib:borrowedBy ?member .\n\n  ?member a lib:Member ;\n          lib:memberName ?memberName ;\n          lib:memberCountry \"Germany\"^^xsd:string .\n}",
+    "semantic_models": [
+      "library_loan"
+    ],
+    "semantic_models_content": {
+      "library_loan": "@prefix lib: <http://fictional.library/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nlib:Loan lib:loanId xsd:string ;\n    lib:loanBookId xsd:string ;\n    lib:loanMemberId xsd:string ;\n    lib:loanDate xsd:date ;\n    lib:loanReturnDate xsd:date ;\n    lib:forBook lib:Book ;\n    lib:borrowedBy lib:Member .\n\nlib:Book lib:bookTitle xsd:string ;\n    lib:bookAuthor xsd:string .\n\nlib:Member lib:memberName xsd:string ;\n    lib:memberCountry xsd:string ."
+    }
+  },
+  {
+    "id": 22,
+    "anfrage": "Get all veterinary appointments scheduled in the current month for cats. Show pet name, owner name, and appointment date.",
+    "sparql_query": "PREFIX vet: <http://fictional.veterinary/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?petName ?ownerName ?appointmentDate\nWHERE {\n  ?appointment a vet:Appointment ;\n               vet:forPet ?pet ;\n               vet:appointmentDate ?appointmentDate .\n\n  ?pet a vet:Pet ;\n       vet:petName ?petName ;\n       vet:petSpecies \"Cat\"^^xsd:string ;\n       vet:ownedByPerson ?owner .\n\n  ?owner a vet:Owner ;\n         vet:ownerName ?ownerName .\n\n  FILTER(MONTH(?appointmentDate) = MONTH(NOW()) && YEAR(?appointmentDate) = YEAR(NOW()))\n}\nORDER BY ?appointmentDate",
+    "semantic_models": [
+      "veterinary_appointment",
+      "veterinary_pet"
+    ],
+    "semantic_models_content": {
+      "veterinary_appointment": "@prefix vet: <http://fictional.veterinary/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nvet:Appointment vet:appointmentId xsd:string ;\n    vet:appointmentDate xsd:date ;\n    vet:appointmentPetId xsd:string ;\n    vet:appointmentReason xsd:string ;\n    vet:appointmentDuration xsd:integer ;\n    vet:forPet vet:Pet .\n\nvet:Pet vet:petName xsd:string .",
+      "veterinary_pet": "@prefix vet: <http://fictional.veterinary/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nvet:Pet vet:petId xsd:string ;\n    vet:petName xsd:string ;\n    vet:petSpecies xsd:string ;\n    vet:petBreed xsd:string ;\n    vet:petDateOfBirth xsd:date ;\n    vet:petOwnerId xsd:string ;\n    vet:petWeight xsd:decimal ;\n    vet:ownedByPerson vet:Owner .\n\nvet:Owner vet:ownerName xsd:string ."
+    }
+  },
+  {
+    "id": 23,
+    "anfrage": "Find all bank transactions above 10000 euros from accounts of VIP customers. Show account number, customer name, and transaction amount. Return only the top 50 results.",
+    "sparql_query": "PREFIX bank: <http://fictional.banking/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?accountNumber ?customerName ?transactionAmount\nWHERE {\n  ?transaction a bank:Transaction ;\n               bank:fromAccount ?account ;\n               bank:transactionAmount ?transactionAmount .\n\n  ?account a bank:Account ;\n           bank:accountNumber ?accountNumber ;\n           bank:belongsTo ?customer .\n\n  ?customer a bank:Customer ;\n            bank:customerName ?customerName ;\n            bank:customerVIPStatus true .\n\n  FILTER(?transactionAmount > 10000)\n}\nORDER BY DESC(?transactionAmount)\nLIMIT 50",
+    "semantic_models": [
+      "banking_transaction",
+      "banking_account"
+    ],
+    "semantic_models_content": {
+      "banking_transaction": "@prefix bank: <http://fictional.banking/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nbank:Transaction bank:transactionId xsd:string ;\n    bank:transactionAmount xsd:decimal ;\n    bank:transactionDate xsd:dateTime ;\n    bank:transactionType xsd:string ;\n    bank:transactionAccountId xsd:string ;\n    bank:transactionDescription xsd:string ;\n    bank:fromAccount bank:Account .\n\nbank:Account bank:accountNumber xsd:string .",
+      "banking_account": "@prefix bank: <http://fictional.banking/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nbank:Account bank:accountId xsd:string ;\n    bank:accountNumber xsd:string ;\n    bank:accountBalance xsd:decimal ;\n    bank:accountType xsd:string ;\n    bank:accountCustomerId xsd:string ;\n    bank:accountCurrency xsd:string ;\n    bank:belongsTo bank:Customer .\n\nbank:Customer bank:customerName xsd:string ;\n    bank:customerVIPStatus xsd:boolean ."
+    }
+  },
+  {
+    "id": 24,
+    "anfrage": "Show weather measurements where temperature exceeds 30 degrees or humidity is below 20 percent. Display station name, temperature, humidity, and measurement date.",
+    "sparql_query": "PREFIX weather: <http://fictional.meteorology/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?stationName ?temperature ?humidity ?measurementDate\nWHERE {\n  ?measurement a weather:Measurement ;\n               weather:forStation ?station ;\n               weather:measurementTemperature ?temperature ;\n               weather:measurementHumidity ?humidity ;\n               weather:measurementDate ?measurementDate .\n\n  ?station a weather:Station ;\n           weather:stationName ?stationName .\n\n  FILTER(?temperature > 30 || ?humidity < 20)\n}\nORDER BY DESC(?temperature)",
+    "semantic_models": [
+      "meteorology_measurement"
+    ],
+    "semantic_models_content": {
+      "meteorology_measurement": "@prefix weather: <http://fictional.meteorology/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nweather:Measurement weather:measurementId xsd:string ;\n    weather:measurementTemperature xsd:decimal ;\n    weather:measurementHumidity xsd:decimal ;\n    weather:measurementPressure xsd:decimal ;\n    weather:measurementWindSpeed xsd:decimal ;\n    weather:measurementDate xsd:dateTime ;\n    weather:measurementStationId xsd:string ;\n    weather:forStation weather:Station .\n\nweather:Station weather:stationName xsd:string ."
+    }
+  },
+  {
+    "id": 25,
+    "anfrage": "Calculate total delivery time for each courier and count their deliveries. Show courier name, total deliveries, and average delivery time for couriers with more than 5 deliveries.",
+    "sparql_query": "PREFIX logistics: <http://fictional.logistics/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?courierName (COUNT(?delivery) AS ?totalDeliveries) (AVG(?deliveryTime) AS ?avgDeliveryTime)\nWHERE {\n  ?delivery a logistics:Delivery ;\n            logistics:deliveredBy ?courier ;\n            logistics:deliveryTimeMinutes ?deliveryTime .\n\n  ?courier a logistics:Courier ;\n           logistics:courierName ?courierName .\n}\nGROUP BY ?courierName\nHAVING (COUNT(?delivery) > 5)\nORDER BY DESC(?totalDeliveries)",
+    "semantic_models": [
+      "logistics_delivery"
+    ],
+    "semantic_models_content": {
+      "logistics_delivery": "@prefix logistics: <http://fictional.logistics/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nlogistics:Delivery logistics:deliveryId xsd:string ;\n    logistics:deliveryTimeMinutes xsd:integer ;\n    logistics:deliveryDate xsd:date ;\n    logistics:deliveryStatus xsd:string ;\n    logistics:deliveryCourierId xsd:string ;\n    logistics:deliveryAddress xsd:string ;\n    logistics:deliveredBy logistics:Courier .\n\nlogistics:Courier logistics:courierName xsd:string ."
+    }
+  },
+  {
+    "id": 26,
+    "anfrage": "Find events attended by participants from at least 3 different cities. Show event name and participant count.",
+    "sparql_query": "PREFIX event: <http://fictional.events/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?eventName (COUNT(DISTINCT ?participant) AS ?participantCount)\nWHERE {\n  ?evt a event:Event ;\n       event:eventName ?eventName .\n\n  ?registration a event:Registration ;\n                event:forEvent ?evt ;\n                event:attendedBy ?participant .\n\n  ?participant a event:Participant ;\n               event:participantCity ?city .\n}\nGROUP BY ?eventName\nHAVING (COUNT(DISTINCT ?city) >= 3)",
+    "semantic_models": [
+      "events_registration"
+    ],
+    "semantic_models_content": {
+      "events_registration": "@prefix event: <http://fictional.events/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nevent:Registration event:registrationId xsd:string ;\n    event:registrationEventId xsd:string ;\n    event:registrationParticipantId xsd:string ;\n    event:registrationDate xsd:date ;\n    event:registrationStatus xsd:string ;\n    event:forEvent event:Event ;\n    event:attendedBy event:Participant .\n\nevent:Event event:eventName xsd:string .\n\nevent:Participant event:participantCity xsd:string ."
+    }
+  },
+  {
+    "id": 27,
+    "anfrage": "List all train tickets for first-class passengers traveling to Berlin. Show passenger name, ticket price, departure date, and a price category (Budget/Standard/Premium based on price).",
+    "sparql_query": "PREFIX ticket: <http://fictional.railway/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?passengerName ?ticketPrice ?departureDate ?discountCategory\nWHERE {\n  ?tkt a ticket:Ticket ;\n       ticket:forPassenger ?passenger ;\n       ticket:ticketClass \"First\"^^xsd:string ;\n       ticket:ticketDestination \"Berlin\"^^xsd:string ;\n       ticket:ticketPrice ?ticketPrice ;\n       ticket:ticketDepartureDate ?departureDate .\n\n  ?passenger a ticket:Passenger ;\n             ticket:passengerName ?passengerName .\n\n  BIND(IF(?ticketPrice < 50, \"Budget\", IF(?ticketPrice < 150, \"Standard\", \"Premium\")) AS ?discountCategory)\n}\nORDER BY ?departureDate",
+    "semantic_models": [
+      "railway_ticket"
+    ],
+    "semantic_models_content": {
+      "railway_ticket": "@prefix ticket: <http://fictional.railway/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nticket:Ticket ticket:ticketId xsd:string ;\n    ticket:ticketClass xsd:string ;\n    ticket:ticketDestination xsd:string ;\n    ticket:ticketPrice xsd:decimal ;\n    ticket:ticketDepartureDate xsd:date ;\n    ticket:ticketPassengerId xsd:string ;\n    ticket:ticketSeatNumber xsd:string ;\n    ticket:forPassenger ticket:Passenger .\n\nticket:Passenger ticket:passengerName xsd:string ."
+    }
+  },
+  {
+    "id": 28,
+    "anfrage": "Find all restaurants with vegan options and a rating of at least 4 stars. Show restaurant name, cuisine type, and rating.",
+    "sparql_query": "PREFIX food: <http://fictional.restaurant/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?restaurantName ?cuisineType ?rating\nWHERE {\n  ?restaurant a food:Restaurant ;\n              food:restaurantName ?restaurantName ;\n              food:restaurantCuisineType ?cuisineType ;\n              food:restaurantRating ?rating ;\n              food:restaurantVeganOptions true .\n\n  FILTER(?rating >= 4)\n}\nORDER BY DESC(?rating)",
+    "semantic_models": [
+      "restaurant_restaurant"
+    ],
+    "semantic_models_content": {
+      "restaurant_restaurant": "@prefix food: <http://fictional.restaurant/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nfood:Restaurant food:restaurantId xsd:string ;\n    food:restaurantName xsd:string ;\n    food:restaurantCuisineType xsd:string ;\n    food:restaurantRating xsd:decimal ;\n    food:restaurantVeganOptions xsd:boolean ;\n    food:restaurantCity xsd:string ;\n    food:restaurantAddress xsd:string ;\n    food:restaurantPhone xsd:string ."
+    }
+  },
+  {
+    "id": 29,
+    "anfrage": "Get insurance claims filed in 2024 with approved status. Show policyholder name, claim amount, and approval date.",
+    "sparql_query": "PREFIX insurance: <http://fictional.insurance/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?policyholderName ?claimAmount ?approvalDate\nWHERE {\n  ?claim a insurance:Claim ;\n         insurance:forPolicyholder ?policyholder ;\n         insurance:claimAmount ?claimAmount ;\n         insurance:claimStatus \"Approved\"^^xsd:string ;\n         insurance:claimApprovalDate ?approvalDate .\n\n  ?policyholder a insurance:Policyholder ;\n                insurance:policyholderName ?policyholderName .\n\n  FILTER(YEAR(?approvalDate) = 2024)\n}\nORDER BY DESC(?claimAmount)",
+    "semantic_models": [
+      "insurance_claim"
+    ],
+    "semantic_models_content": {
+      "insurance_claim": "@prefix insurance: <http://fictional.insurance/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\ninsurance:Claim insurance:claimId xsd:string ;\n    insurance:claimAmount xsd:decimal ;\n    insurance:claimStatus xsd:string ;\n    insurance:claimApprovalDate xsd:date ;\n    insurance:claimFilingDate xsd:date ;\n    insurance:claimPolicyholderId xsd:string ;\n    insurance:claimDescription xsd:string ;\n    insurance:forPolicyholder insurance:Policyholder .\n\ninsurance:Policyholder insurance:policyholderName xsd:string ."
+    }
+  },
+  {
+    "id": 30,
+    "anfrage": "Calculate total energy production per plant type in kWh. Show plant type and sum of energy produced, only for plant types producing more than 100000 kWh. Ensure all measurements are in kWh.",
+    "sparql_query": "PREFIX energy: <http://fictional.energy/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?plantType (SUM(?production) AS ?totalProduction)\nWHERE {\n  ?prod a energy:Production ;\n        energy:fromPlant ?plant ;\n        energy:productionAmount ?production ;\n        energy:productionUnit \"kWh\"^^xsd:string .\n\n  ?plant a energy:Plant ;\n         energy:plantType ?plantType .\n}\nGROUP BY ?plantType\nHAVING (SUM(?production) > 100000)\nORDER BY DESC(?totalProduction)",
+    "semantic_models": [
+      "energy_production"
+    ],
+    "semantic_models_content": {
+      "energy_production": "@prefix energy: <http://fictional.energy/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nenergy:Production energy:productionId xsd:string ;\n    energy:productionAmount xsd:decimal ;\n    energy:productionDate xsd:date ;\n    energy:productionPlantId xsd:string ;\n    energy:productionUnit xsd:string ;\n    energy:fromPlant energy:Plant .\n\nenergy:Plant energy:plantType xsd:string ."
+    }
+  },
+  {
+    "id": 31,
+    "anfrage": "Combine all customer information from both online store and retail store databases. Show customer name and email from both sources.",
+    "sparql_query": "PREFIX shop: <http://fictional.shop/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?customerName ?email\nWHERE {\n  {\n    ?onlineCustomer a shop:OnlineCustomer ;\n                    shop:onlineCustomerName ?customerName ;\n                    shop:onlineCustomerEmail ?email .\n  }\n  UNION\n  {\n    ?retailCustomer a shop:RetailCustomer ;\n                    shop:retailCustomerName ?customerName ;\n                    shop:retailCustomerEmail ?email .\n  }\n}\nORDER BY ?customerName",
+    "semantic_models": [
+      "shop_online_customer",
+      "shop_retail_customer"
+    ],
+    "semantic_models_content": {
+      "shop_online_customer": "@prefix shop: <http://fictional.shop/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nshop:OnlineCustomer shop:onlineCustomerId xsd:string ;\n    shop:onlineCustomerName xsd:string ;\n    shop:onlineCustomerEmail xsd:string ;\n    shop:onlineCustomerRegistrationDate xsd:date ;\n    shop:onlineCustomerUsername xsd:string .",
+      "shop_retail_customer": "@prefix shop: <http://fictional.shop/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nshop:RetailCustomer shop:retailCustomerId xsd:string ;\n    shop:retailCustomerName xsd:string ;\n    shop:retailCustomerEmail xsd:string ;\n    shop:retailCustomerLoyaltyCardNumber xsd:string ;\n    shop:retailCustomerStoreLocation xsd:string ."
+    }
+  },
+  {
+    "id": 32,
+    "anfrage": "Get a complete list of all employees including both full-time and part-time workers. Show employee name and position from both employment types.",
+    "sparql_query": "PREFIX hr: <http://fictional.hr/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?employeeName ?position\nWHERE {\n  {\n    ?fulltime a hr:FullTimeEmployee ;\n              hr:fullTimeEmployeeName ?employeeName ;\n              hr:fullTimeEmployeePosition ?position .\n  }\n  UNION\n  {\n    ?parttime a hr:PartTimeEmployee ;\n              hr:partTimeEmployeeName ?employeeName ;\n              hr:partTimeEmployeePosition ?position .\n  }\n}\nORDER BY ?employeeName",
+    "semantic_models": [
+      "hr_fulltime_employee",
+      "hr_parttime_employee"
+    ],
+    "semantic_models_content": {
+      "hr_fulltime_employee": "@prefix hr: <http://fictional.hr/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nhr:FullTimeEmployee hr:fullTimeEmployeeId xsd:string ;\n    hr:fullTimeEmployeeName xsd:string ;\n    hr:fullTimeEmployeePosition xsd:string ;\n    hr:fullTimeEmployeeSalary xsd:decimal ;\n    hr:fullTimeEmployeeBenefits xsd:string ;\n    hr:fullTimeEmployeeHireDate xsd:date .",
+      "hr_parttime_employee": "@prefix hr: <http://fictional.hr/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nhr:PartTimeEmployee hr:partTimeEmployeeId xsd:string ;\n    hr:partTimeEmployeeName xsd:string ;\n    hr:partTimeEmployeePosition xsd:string ;\n    hr:partTimeEmployeeHourlyRate xsd:decimal ;\n    hr:partTimeEmployeeHoursPerWeek xsd:integer ;\n    hr:partTimeEmployeeHireDate xsd:date ."
+    }
+  },
+  {
+    "id": 33,
+    "anfrage": "Find all research publications from 2020 onwards, including both journal articles (with impact factor) and conference papers (with conference name). Show title, year, publication type, and either impact factor or conference name.",
+    "sparql_query": "PREFIX research: <http://fictional.research/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?title ?year ?publicationType ?additionalInfo\nWHERE {\n  {\n    ?article a research:JournalArticle ;\n             research:articleTitle ?title ;\n             research:articleYear ?year ;\n             research:articleJournal ?journal .\n\n    ?journal research:journalImpactFactor ?impactFactor .\n\n    BIND(\"Journal Article\"^^xsd:string AS ?publicationType)\n    BIND(CONCAT(\"Impact Factor: \", STR(?impactFactor)) AS ?additionalInfo)\n\n    FILTER(?year >= 2020)\n  }\n  UNION\n  {\n    ?paper a research:ConferencePaper ;\n           research:paperTitle ?title ;\n           research:paperYear ?year ;\n           research:paperConference ?conference .\n\n    ?conference research:conferenceName ?confName .\n\n    BIND(\"Conference Paper\"^^xsd:string AS ?publicationType)\n    BIND(CONCAT(\"Conference: \", ?confName) AS ?additionalInfo)\n\n    FILTER(?year >= 2020)\n  }\n}\nORDER BY DESC(?year) ?title",
+    "semantic_models": [
+      "research_journal_article",
+      "research_conference_paper"
+    ],
+    "semantic_models_content": {
+      "research_journal_article": "@prefix research: <http://fictional.research/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nresearch:JournalArticle research:articleId xsd:string ;\n    research:articleTitle xsd:string ;\n    research:articleYear xsd:integer ;\n    research:articleDOI xsd:string ;\n    research:articleAuthors xsd:string ;\n    research:articleJournalId xsd:string ;\n    research:articleJournal research:Journal .\n\nresearch:Journal research:journalName xsd:string ;\n    research:journalImpactFactor xsd:decimal .",
+      "research_conference_paper": "@prefix research: <http://fictional.research/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nresearch:ConferencePaper research:paperId xsd:string ;\n    research:paperTitle xsd:string ;\n    research:paperYear xsd:integer ;\n    research:paperDOI xsd:string ;\n    research:paperAuthors xsd:string ;\n    research:paperConferenceId xsd:string ;\n    research:paperConference research:Conference .\n\nresearch:Conference research:conferenceName xsd:string ;\n    research:conferenceLocation xsd:string ."
+    }
+  },
+  {
+    "id": 34,
+    "anfrage": "Find all premium customers who have made orders since January 2024 with products from the 'Electronics' category, where those products have an average review rating above 4 stars. Show customer name, order date, product name, product price, review rating, and shipping status. Only include orders with completed payment that are either shipped or delivered.",
+    "sparql_query": "PREFIX shop: <http://fictional.ecommerce/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?customerName ?orderDate ?productName ?productPrice ?avgRating ?shippingStatus\nWHERE {\n  # Customer must be premium\n  ?customer a shop:Customer ;\n            shop:customerName ?customerName ;\n            shop:customerMembershipLevel \"Premium\"^^xsd:string ;\n            shop:placedOrder ?order .\n\n  # Order details\n  ?order a shop:Order ;\n         shop:orderDate ?orderDate ;\n         shop:hasPayment ?payment ;\n         shop:hasShipping ?shipping ;\n         shop:containsItem ?orderItem .\n\n  # Payment must be completed\n  ?payment a shop:Payment ;\n           shop:paymentStatus \"Completed\"^^xsd:string .\n\n  # Shipping status\n  ?shipping a shop:Shipping ;\n            shop:shippingStatus ?shippingStatus .\n\n  # Only shipped or delivered orders\n  FILTER(?shippingStatus = \"Shipped\"^^xsd:string || ?shippingStatus = \"Delivered\"^^xsd:string)\n\n  # Order contains items\n  ?orderItem a shop:OrderItem ;\n             shop:forProduct ?product ;\n             shop:itemQuantity ?quantity .\n\n  # Product details\n  ?product a shop:Product ;\n           shop:productName ?productName ;\n           shop:productPrice ?productPrice ;\n           shop:inCategory ?category .\n\n  # Category must be Electronics\n  ?category a shop:Category ;\n            shop:categoryName \"Electronics\"^^xsd:string .\n\n  # Calculate average rating per product\n  {\n    SELECT ?product (AVG(?rating) AS ?avgRating)\n    WHERE {\n      ?product shop:hasReview ?rev .\n      ?rev shop:reviewRating ?rating .\n    }\n    GROUP BY ?product\n    HAVING (AVG(?rating) > 4.0)\n  }\n\n  # Order must be from last year\n  FILTER(?orderDate >= \"2024-01-01\"^^xsd:date)\n}\nORDER BY DESC(?orderDate) ?customerName",
+    "semantic_models": [
+      "ecommerce_complete_system"
+    ],
+    "semantic_models_content": {
+      "ecommerce_complete_system": "@prefix shop: <http://fictional.ecommerce/ontology#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n# Customer class with relationships\nshop:Customer shop:customerId xsd:string ;\n    shop:customerName xsd:string ;\n    shop:customerEmail xsd:string ;\n    shop:customerMembershipLevel xsd:string ;\n    shop:customerRegistrationDate xsd:date ;\n    shop:customerPhone xsd:string ;\n    shop:customerAddress xsd:string ;\n    shop:placedOrder shop:Order ;\n    shop:wroteReview shop:Review .\n\n# Order class with relationships\nshop:Order shop:orderId xsd:string ;\n    shop:orderDate xsd:date ;\n    shop:orderTotalAmount xsd:decimal ;\n    shop:orderCustomerId xsd:string ;\n    shop:orderStatus xsd:string ;\n    shop:containsItem shop:OrderItem ;\n    shop:hasPayment shop:Payment ;\n    shop:hasShipping shop:Shipping .\n\n# OrderItem class with relationships\nshop:OrderItem shop:orderItemId xsd:string ;\n    shop:orderItemOrderId xsd:string ;\n    shop:orderItemProductId xsd:string ;\n    shop:itemQuantity xsd:integer ;\n    shop:itemPrice xsd:decimal ;\n    shop:itemDiscount xsd:decimal ;\n    shop:forProduct shop:Product .\n\n# Product class with relationships\nshop:Product shop:productId xsd:string ;\n    shop:productName xsd:string ;\n    shop:productPrice xsd:decimal ;\n    shop:productDescription xsd:string ;\n    shop:productStockQuantity xsd:integer ;\n    shop:productSKU xsd:string ;\n    shop:productCategoryId xsd:string ;\n    shop:inCategory shop:Category ;\n    shop:hasReview shop:Review .\n\n# Category class\nshop:Category shop:categoryId xsd:string ;\n    shop:categoryName xsd:string ;\n    shop:categoryDescription xsd:string ;\n    shop:categoryParentId xsd:string .\n\n# Review class with relationships\nshop:Review shop:reviewId xsd:string ;\n    shop:reviewRating xsd:decimal ;\n    shop:reviewText xsd:string ;\n    shop:reviewDate xsd:date ;\n    shop:reviewProductId xsd:string ;\n    shop:reviewCustomerId xsd:string ;\n    shop:reviewVerifiedPurchase xsd:boolean ;\n    shop:forProduct shop:Product ;\n    shop:writtenBy shop:Customer .\n\n# Payment class\nshop:Payment shop:paymentId xsd:string ;\n    shop:paymentOrderId xsd:string ;\n    shop:paymentAmount xsd:decimal ;\n    shop:paymentMethod xsd:string ;\n    shop:paymentStatus xsd:string ;\n    shop:paymentDate xsd:dateTime ;\n    shop:paymentTransactionId xsd:string .\n\n# Shipping class\nshop:Shipping shop:shippingId xsd:string ;\n    shop:shippingOrderId xsd:string ;\n    shop:shippingAddress xsd:string ;\n    shop:shippingCity xsd:string ;\n    shop:shippingCountry xsd:string ;\n    shop:shippingStatus xsd:string ;\n    shop:shippingCarrier xsd:string ;\n    shop:shippingTrackingNumber xsd:string ;\n    shop:shippingDate xsd:date ;\n    shop:estimatedDeliveryDate xsd:date ."
+    }
+  }
+]

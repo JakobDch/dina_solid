@@ -1,0 +1,65 @@
+[project]
+name = "dina-backend"
+version = "0.1.0"
+description = "Conversational access to a Solid dataspace via generated SPARQL queries"
+readme = "../README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    # Web framework and server
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "python-multipart>=0.0.20",
+
+    # Configuration
+    "pydantic>=2.11",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.1",
+
+    # Persistence
+    "sqlmodel>=0.0.24",
+    "psycopg[binary]>=3.2",
+    "redis>=6.0",
+
+    # HTTP clients
+    "httpx>=0.25",
+    "requests>=2.20",
+    "aiofiles>=23.0",
+
+    # RDF handling for the DCAT catalog
+    "rdflib>=7.0",
+
+    # Language models
+    "openai>=1.0",
+    "langchain-core>=0.3",
+
+    # Charts produced from query results
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
