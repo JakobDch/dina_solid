@@ -116,6 +116,11 @@ Anfrage scheitern zu lassen — Registries überleben die eingetragenen Pods
 regelmäßig. Mit `CATALOG_USE_FEDERATION=false` wird nur der konfigurierte
 Katalog abgefragt.
 
+Registry-Einträge entstehen bei der Registrierung und werden nicht
+nachgezogen, wenn der Server später umbenannt wird — dann erscheinen alle Pods
+als nicht erreichbar. Mit `POD_HOST_REWRITES=alt.example=neu.example` lässt sich
+der eingetragene Host auf den aktuellen abbilden.
+
 ## Konfiguration
 
 Alle Variablen sind in [`.env.example`](.env.example) dokumentiert. Die

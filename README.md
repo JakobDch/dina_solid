@@ -113,6 +113,11 @@ them. Pods that are unreachable are skipped rather than failing the request —
 registries routinely outlive the pods they point at. Set
 `CATALOG_USE_FEDERATION=false` to query only the configured catalog.
 
+Registry entries are written when a pod registers and are not revised if the
+server is renamed later, which makes every pod look unreachable. Set
+`POD_HOST_REWRITES=old.example=new.example` to map the recorded host onto the
+current one.
+
 ## Configuration
 
 Every variable is documented in [`.env.example`](.env.example). The ones worth

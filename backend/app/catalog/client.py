@@ -35,7 +35,23 @@ from ..config import (
     CATALOG_CONTAINER_PATH,
     CATALOG_USE_FEDERATION,
     FEDERATION_TIMEOUT_SECONDS,
+    POD_HOST_REWRITES,
 )
+
+
+def _apply_host_rewrites(url: str) -> str:
+    """Map a pod URL onto its current host, if a substitution is configured.
+
+    Registry entries are written when a pod registers and are not revised when
+    the server is later renamed, so without this every pod of a migrated
+    dataspace looks unreachable. See POD_HOST_REWRITES in app/config.py.
+    """
+    for old_host, new_host in POD_HOST_REWRITES.items():
+        if f"//{old_host}/" in url:
+            rewritten = url.replace(f"//{old_host}/", f"//{new_host}/", 1)
+            logger.info(f"Rewrote registry host: {old_host} -> {new_host}")
+            return rewritten
+    return url
 
 
 # =============================================================================
@@ -347,7 +363,7 @@ class CatalogClient:
                 # Pod URL: https://solid-community-server.tmdt.info/dace/
                 pod_base_match = re.match(r'(https?://[^/]+/[^/]+/).*', webid)
                 if pod_base_match:
-                    pod_base_url = pod_base_match.group(1)
+                    pod_base_url = _apply_host_rewrites(pod_base_match.group(1))
                     if pod_base_url not in pod_urls:
                         pod_urls.append(pod_base_url)
                         logger.info(f"Discovered pod from registry: {pod_base_url}")

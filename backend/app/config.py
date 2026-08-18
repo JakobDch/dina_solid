@@ -108,6 +108,24 @@ CATALOG_USE_FEDERATION = os.getenv("CATALOG_USE_FEDERATION", "true").lower() in 
 # the registry lists pods that may have been decommissioned.
 FEDERATION_TIMEOUT_SECONDS = float(os.getenv("FEDERATION_TIMEOUT_SECONDS", "5.0"))
 
+# Host substitutions applied to pod URLs read from the federation registry.
+#
+# Registries outlive the deployments they describe: when a pod server is renamed,
+# the WebIDs already recorded keep pointing at the old host and every pod in the
+# dataspace becomes unreachable. Rather than give up on such a registry, allow
+# the old host to be mapped onto the new one.
+#
+# Format: "old.example=new.example,other.example=new.example"
+POD_HOST_REWRITES = {
+    old.strip(): new.strip()
+    for old, _, new in (
+        pair.partition("=")
+        for pair in os.getenv("POD_HOST_REWRITES", "").split(",")
+        if "=" in pair
+    )
+    if old.strip() and new.strip()
+}
+
 # Retained for backwards compatibility with existing deployment .env files.
 CATALOG_BASE_URL = SOLID_POD_BASE_URL
 
