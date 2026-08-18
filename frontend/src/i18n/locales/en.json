@@ -194,5 +194,22 @@
     "plan_step_completed": "Step finished",
     "visualization_generating": "Creating the chart...",
     "calculation_running": "Calculating results..."
+  },
+  "apiKeys": {
+    "title": "API keys",
+    "menuItem": "API keys",
+    "intro": "Choose a language model provider and paste your own key. Without a key the assistant cannot answer.",
+    "privacyNote": "Keys stay in this browser and are sent only with the request that needs them. They are never stored on the server.",
+    "stored": "stored",
+    "onServer": "provided by server",
+    "notSet": "not set",
+    "getKey": "Get a {{provider}} key",
+    "saved": "API keys saved",
+    "cleared": "API keys removed",
+    "clearAll": "Remove all",
+    "ollamaNote": "Ollama models run locally and need no key.",
+    "missingTitle": "No API key",
+    "missingBody": "Add a key for {{provider}} to use this model.",
+    "openSettings": "Open settings"
   }
 }

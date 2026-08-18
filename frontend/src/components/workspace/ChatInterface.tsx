@@ -16,6 +16,9 @@ import { isReasoningOnlyStepId } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useChatContext } from '../../contexts/ChatContext';
 import { useSolidAuth } from '../../contexts/SolidAuthContext';
+import { useApiKeys } from '../../contexts/ApiKeyContext';
+import { providerForProfile } from '../../utils/llmProviders';
+import ApiKeySettingsModal from '../common/ApiKeySettingsModal';
 import { useComunicaQuery } from '../../hooks/useComunicaQuery';
 import type { ComunicaDatasetUrl } from '../../types';
 
@@ -45,6 +48,18 @@ export default function ChatInterface(): React.JSX.Element {
   // Solid Pod authentication and external catalog
   const { t, i18n } = useTranslation();
   const { isLoggedIn: isSolidLoggedIn, catalogId, catalogUrl, getAccessToken } = useSolidAuth();
+  const { getKey } = useApiKeys();
+  const [serverProvidedKeys, setServerProvidedKeys] = useState<Record<string, boolean>>({});
+  const [apiKeyPromptVisible, setApiKeyPromptVisible] = useState(false);
+
+  // Some deployments configure a key in the environment; in that case the user
+  // does not have to supply one.
+  useEffect(() => {
+    api
+      .get<{ configured_on_server: Record<string, boolean> }>('/api/v1/agent/profiles')
+      .then((response) => setServerProvidedKeys(response.data.configured_on_server ?? {}))
+      .catch(() => setServerProvidedKeys({}));
+  }, []);
   const { executeQuery: executeComunicaQuery } = useComunicaQuery();
 
   // Additional UI state for Retrieval settings
@@ -1354,22 +1369,51 @@ ${data.message || t('chat.needMoreInfo')}`,
   };
 
   // Handle Comunica query execution (client-side SPARQL execution against Solid Pod data)
-  // Hand the Solid access token to the backend over a POST and keep only the
-  // returned reference for the stream URL, so the token stays out of logs,
-  // browser history and Referer headers.
-  const exchangeSolidToken = async (): Promise<string | undefined> => {
-    try {
-      const token = await getAccessToken();
-      if (!token) return undefined;
+  // The stream cannot report a 400 body back to us, so check up front whether
+  // the selected model has a key at all and point the user at the settings.
+  const ensureApiKeyAvailable = (): boolean => {
+    const provider = providerForProfile(selectedLLMProfile);
+    if (!provider) return true; // Local model, no key needed.
+    if (getKey(provider)) return true;
+    if (serverProvidedKeys[provider]) return true;
 
-      const response = await api.post<{ token_ref: string }>(
-        '/api/v1/agent/solid-token',
-        null,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      return response.data.token_ref;
+    message.warning({
+      content: t('apiKeys.missingBody', { provider }),
+      duration: 6,
+    });
+    setApiKeyPromptVisible(true);
+    return false;
+  };
+
+  // Hand the credentials the stream needs to the backend over a POST and keep
+  // only the returned reference for the stream URL, so neither the Solid token
+  // nor the model key lands in logs, browser history or Referer headers.
+  const exchangeCredentials = async (): Promise<string | undefined> => {
+    const headers: Record<string, string> = {};
+
+    try {
+      if (isSolidLoggedIn) {
+        const token = await getAccessToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+      }
     } catch (error) {
-      console.error('Could not exchange the Solid token:', error);
+      console.error('Could not read the Solid token:', error);
+    }
+
+    const apiKey = getKey(providerForProfile(selectedLLMProfile));
+    if (apiKey) headers['X-LLM-Api-Key'] = apiKey;
+
+    if (Object.keys(headers).length === 0) return undefined;
+
+    try {
+      const response = await api.post<{ credentials_ref: string }>(
+        '/api/v1/agent/credentials',
+        null,
+        { headers },
+      );
+      return response.data.credentials_ref;
+    } catch (error) {
+      console.error('Could not hand over the credentials:', error);
       return undefined;
     }
   };
@@ -1400,7 +1444,12 @@ ${data.message || t('chat.needMoreInfo')}`,
 
     // Exchange the Solid token for a short-lived reference. EventSource cannot
     // set headers, so only the reference may travel in the stream URL.
-    const solidTokenRef = isSolidLoggedIn ? await exchangeSolidToken() : undefined;
+    if (!ensureApiKeyAvailable()) {
+      setIsChatLoading(false);
+      return;
+    }
+
+    const credentialsRef = await exchangeCredentials();
 
     // Always use the agent pipeline - Solid mode is handled via parameters
     // The agent will use Comunica for DATA_EXTRACTION when solid_mode is true
@@ -1420,8 +1469,8 @@ ${data.message || t('chat.needMoreInfo')}`,
       catalog_url: catalogUrl || '',
     });
 
-    if (solidTokenRef) {
-      params.append('solid_token_ref', solidTokenRef);
+    if (credentialsRef) {
+      params.append('credentials_ref', credentialsRef);
     }
 
     // Add session_id if we have one
@@ -1466,7 +1515,12 @@ ${data.message || t('chat.needMoreInfo')}`,
 
     // Exchange the Solid token for a short-lived reference. EventSource cannot
     // set headers, so only the reference may travel in the stream URL.
-    const solidTokenRef = isSolidLoggedIn ? await exchangeSolidToken() : undefined;
+    if (!ensureApiKeyAvailable()) {
+      setIsChatLoading(false);
+      return;
+    }
+
+    const credentialsRef = await exchangeCredentials();
 
     // Use unified agent/chat endpoint with all parameters including Solid mode
     // This ensures follow-up queries have full context access
@@ -1487,8 +1541,8 @@ ${data.message || t('chat.needMoreInfo')}`,
       catalog_url: catalogUrl || '',
     });
 
-    if (solidTokenRef) {
-      params.append('solid_token_ref', solidTokenRef);
+    if (credentialsRef) {
+      params.append('credentials_ref', credentialsRef);
     }
 
     const sseConfig = {
@@ -2205,6 +2259,10 @@ ${data.message || t('chat.needMoreInfo')}`,
           />
         </div>
       </div>
+      <ApiKeySettingsModal
+        visible={apiKeyPromptVisible}
+        onClose={() => setApiKeyPromptVisible(false)}
+      />
     </div>
   );
 }

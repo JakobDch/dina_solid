@@ -24,6 +24,7 @@ import { ChatProvider } from './contexts/ChatContext';
 import { ProfileProvider } from './contexts/ProfileContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SolidAuthProvider } from './contexts/SolidAuthContext';
+import { ApiKeyProvider } from './contexts/ApiKeyContext';
 import ChatInterface from './components/workspace/ChatInterface';
 import Profile from './components/workspace/Profile';
 
@@ -224,6 +225,7 @@ function ThemedApp() {
             }}
           >
             <SolidAuthProvider>
+              <ApiKeyProvider>
               <ProfileProvider>
                 <ChatProvider>
                   <Routes>
@@ -248,6 +250,7 @@ function ThemedApp() {
                   </Routes>
                 </ChatProvider>
               </ProfileProvider>
+              </ApiKeyProvider>
             </SolidAuthProvider>
           </Layout.Content>
         </Layout>

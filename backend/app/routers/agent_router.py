@@ -17,7 +17,13 @@ from sqlmodel import Session, select
 import redis.asyncio as aioredis
 
 from ..db import get_session
-from ..config import get_settings, get_llm_for_profile, AppSettings
+from ..config import (
+    get_settings,
+    get_llm_for_profile,
+    describe_llm_profiles,
+    MissingApiKeyError,
+    AppSettings,
+)
 from ..orchestrating_agent import (
     OrchestratingAgent,
     AgentContext,
@@ -407,59 +413,91 @@ async def save_agent_context(
 
 
 # =============================================================================
-# SOLID TOKEN HANDOFF
+# CREDENTIAL HANDOFF
 #
 # The chat stream is consumed with EventSource, which cannot set request
-# headers, so anything it needs has to travel in the URL. An access token in a
-# URL ends up in server logs, browser history and Referer headers, so the
-# client exchanges it for a short-lived opaque reference first and only that
-# reference appears in the stream URL.
+# headers, so anything it needs has to travel in the URL. Credentials in a URL
+# end up in server logs, browser history and Referer headers, so the client
+# hands them over in a POST first and passes only a short-lived opaque
+# reference on the stream URL.
 # =============================================================================
 _TOKEN_HANDOFF_TTL_SECONDS = 120
-_token_handoff: dict[str, tuple[str, datetime]] = {}
+_credential_handoff: dict[str, tuple[dict, datetime]] = {}
 
 
-def _store_solid_token(token: str) -> str:
-    """Store a Solid access token and return a short-lived reference to it."""
-    _prune_token_handoff()
+def _store_credentials(credentials: dict) -> str:
+    """Store a credential bundle and return a short-lived reference to it."""
+    _prune_credential_handoff()
     reference = uuid.uuid4().hex
-    _token_handoff[reference] = (token, datetime.now(timezone.utc))
+    _credential_handoff[reference] = (credentials, datetime.now(timezone.utc))
     return reference
 
 
-def _take_solid_token(reference: Optional[str]) -> Optional[str]:
-    """Resolve and consume a token reference. Returns None if unknown or stale."""
-    _prune_token_handoff()
+def _take_credentials(reference: Optional[str]) -> dict:
+    """Resolve and consume a reference. Returns {} if unknown or expired."""
+    _prune_credential_handoff()
     if not reference:
-        return None
-    entry = _token_handoff.pop(reference, None)
-    return entry[0] if entry else None
+        return {}
+    entry = _credential_handoff.pop(reference, None)
+    return entry[0] if entry else {}
 
 
-def _prune_token_handoff() -> None:
+def _prune_credential_handoff() -> None:
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=_TOKEN_HANDOFF_TTL_SECONDS)
-    for reference, (_, created) in list(_token_handoff.items()):
+    for reference, (_, created) in list(_credential_handoff.items()):
         if created < cutoff:
-            del _token_handoff[reference]
+            del _credential_handoff[reference]
 
 
-@router.post("/solid-token", summary="Exchange a Solid access token for a stream reference")
-async def exchange_solid_token(authorization: Optional[str] = Header(None)):
-    """Take a Solid access token from the Authorization header.
+def _api_key_from_header(x_llm_api_key: Optional[str]) -> Optional[str]:
+    """Normalise the per-request API key header."""
+    return x_llm_api_key.strip() if x_llm_api_key and x_llm_api_key.strip() else None
 
-    Returns an opaque reference that may be passed to the chat stream instead of
-    the token itself. The reference expires quickly and can be redeemed once.
+
+@router.post("/credentials", summary="Exchange credentials for a stream reference")
+async def exchange_credentials(
+    authorization: Optional[str] = Header(None),
+    x_llm_api_key: Optional[str] = Header(None),
+):
+    """Take the credentials the chat stream will need.
+
+    The Solid access token arrives in the Authorization header, the language
+    model key in X-LLM-Api-Key. Both are optional: a deployment may configure
+    the model key in its environment, and the dataspace may be readable without
+    signing in. Returns a reference that expires quickly and is redeemed once.
     """
+    credentials: dict = {}
+
     scheme, _, token = (authorization or "").partition(" ")
-    if scheme.lower() != "bearer" or not token.strip():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Expected a bearer token in the Authorization header",
-        )
+    if scheme.lower() == "bearer" and token.strip():
+        credentials["solid_token"] = token.strip()
+
+    api_key = _api_key_from_header(x_llm_api_key)
+    if api_key:
+        credentials["llm_api_key"] = api_key
 
     return {
-        "token_ref": _store_solid_token(token.strip()),
+        "credentials_ref": _store_credentials(credentials),
         "expires_in": _TOKEN_HANDOFF_TTL_SECONDS,
+    }
+
+
+@router.get("/profiles", summary="List the available language model profiles")
+async def list_profiles(settings: AppSettings = Depends(get_settings)):
+    """Describe the selectable models and which provider key each one needs.
+
+    `configured` reports whether the server already holds a key for a provider,
+    so the interface can show which ones the user still has to supply.
+    """
+    configured = {
+        "deepseek": bool(settings.deepseek_api_key),
+        "openai": bool(settings.openai_api_key),
+        "fireworks": bool(settings.fireworks_api_key),
+        "ollama": True,  # Runs locally, no credentials involved.
+    }
+    return {
+        "profiles": describe_llm_profiles(),
+        "configured_on_server": configured,
     }
 
 
@@ -479,9 +517,9 @@ async def agent_chat(
     solid_mode: bool = Query(False, description="Enable Solid mode for external catalog"),
     catalog_id: str = Query("", description="External catalog ID"),
     catalog_url: str = Query("", description="External catalog API URL"),
-    solid_token_ref: Optional[str] = Query(None, description="Reference obtained from POST /solid-token"),
+    credentials_ref: Optional[str] = Query(None, description="Reference obtained from POST /credentials"),
     db: Session = Depends(get_session),
-    settings: AppSettings = Depends(get_settings)
+    settings: AppSettings = Depends(get_settings),
 ):
     """
     Main endpoint for agent-orchestrated chat.
@@ -493,9 +531,26 @@ async def agent_chat(
     - DATA_VISUALIZATION: Generate and execute matplotlib code for plots
     - NEW_QUERY: Detect context switch and start new session
     """
+    credentials = _take_credentials(credentials_ref)
+    solid_auth_token = credentials.get("solid_token")
+
     try:
         # Get LLM instance
-        llm_instance = get_llm_for_profile(llm_profile, settings)
+        try:
+            llm_instance = get_llm_for_profile(
+                llm_profile, settings, api_key=credentials.get("llm_api_key")
+            )
+        except MissingApiKeyError as exc:
+            # Answered as a normal error response rather than a stream, so the
+            # interface can send the user straight to its settings.
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "missing_api_key",
+                    "provider": exc.provider,
+                    "message": str(exc),
+                },
+            )
         if not llm_instance:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -531,7 +586,6 @@ async def agent_chat(
                 agent.context.catalog_id = catalog_id
             if catalog_url:
                 agent.context.catalog_url = catalog_url
-            solid_auth_token = _take_solid_token(solid_token_ref)
             if solid_auth_token:
                 agent.context.solid_auth_token = solid_auth_token
                 logger.info(f"[Agent Router] Solid mode enabled with auth token (using default catalog)")
@@ -726,7 +780,8 @@ async def confirm_plan(
     few_shot_prompting_enabled: bool = Query(False, description="Enable few-shot prompting"),
     interactive_mode: bool = Query(False, description="Enable interactive model selection"),
     db: Session = Depends(get_session),
-    settings: AppSettings = Depends(get_settings)
+    settings: AppSettings = Depends(get_settings),
+    x_llm_api_key: Optional[str] = Header(None),
 ):
     """
     Confirm and execute a previously generated plan that was awaiting confirmation.
@@ -734,7 +789,9 @@ async def confirm_plan(
     """
     try:
         # Get LLM instance
-        llm_instance = get_llm_for_profile(llm_profile, settings)
+        llm_instance = get_llm_for_profile(
+            llm_profile, settings, api_key=_api_key_from_header(x_llm_api_key)
+        )
         if not llm_instance:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -982,7 +1039,8 @@ async def continue_plan_after_comunica(
     few_shot_prompting_enabled: bool = Query(False, description="Enable few-shot prompting"),
     interactive_mode: bool = Query(False, description="Enable interactive model selection"),
     db: Session = Depends(get_session),
-    settings: AppSettings = Depends(get_settings)
+    settings: AppSettings = Depends(get_settings),
+    x_llm_api_key: Optional[str] = Header(None),
 ):
     """
     Continue an agent plan after the frontend has executed a Comunica query.
@@ -990,7 +1048,9 @@ async def continue_plan_after_comunica(
     """
     try:
         # Get LLM instance
-        llm_instance = get_llm_for_profile(llm_profile, settings)
+        llm_instance = get_llm_for_profile(
+            llm_profile, settings, api_key=_api_key_from_header(x_llm_api_key)
+        )
         if not llm_instance:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

@@ -132,6 +132,23 @@ wichtigsten:
 Das Modell wird pro Unterhaltung in der Oberfläche gewählt; die Profile stehen
 in `backend/app/config.py`.
 
+## API-Schlüssel
+
+Der Assistent braucht einen Schlüssel für einen Sprachmodell-Anbieter. Dafür
+gibt es zwei Wege; für eine geteilte Instanz ist der erste der bessere:
+
+- **In der Oberfläche.** Über das Schlüssel-Symbol im Header lässt sich ein
+  DeepSeek-, OpenAI- oder Fireworks-Schlüssel eintragen. Er bleibt im Browser
+  und wird nur mit der Anfrage gesendet, die ihn braucht - der Server
+  speichert ihn nie. Jede Person nutzt so ihren eigenen Schlüssel und ihr
+  eigenes Kontingent.
+- **In der Umgebung.** `DEEPSEEK_API_KEY` (oder `OPENAI_API_KEY` /
+  `FIREWORKS_API_KEY`) in `.env` setzen. Für den Einzelbetrieb bequem, aber
+  alle Nutzer der Instanz verbrauchen dann denselben Schlüssel.
+
+Ein in der Oberfläche eingetragener Schlüssel hat Vorrang vor der Umgebung.
+Lokal über Ollama betriebene Modelle brauchen gar keinen.
+
 ## Sprache
 
 Die Oberfläche gibt es auf Deutsch und Englisch. Die Sprache wird aus dem

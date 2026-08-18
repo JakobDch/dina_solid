@@ -239,35 +239,88 @@ def get_available_llm_profiles():
     """Gibt eine Liste der verfügbaren LLM-Profile zurück"""
     return LLM_PROFILES.keys()
 
-def get_llm_for_profile(profile_key: str, settings: AppSettings):
-    """Erstellt eine LLM-Instanz für das angegebene Profil"""
+class MissingApiKeyError(ValueError):
+    """No API key is available for the selected profile.
+
+    Carries the provider so the interface can point the user at the right
+    field in its settings.
+    """
+
+    def __init__(self, profile_key: str, provider: str):
+        self.profile_key = profile_key
+        self.provider = provider
+        super().__init__(
+            f"No API key available for '{profile_key}'. Add a {provider} key in "
+            "the settings, or set one in the environment."
+        )
+
+
+def get_profile_provider(profile_key: str) -> str:
+    """Return the credential provider a profile draws on.
+
+    Several profiles share one provider - the Fireworks-hosted models all use
+    the same key - so this is what the interface groups its fields by.
+    """
+    profile = LLM_PROFILES.get(profile_key)
+    if not profile:
+        raise ValueError(f"Unknown LLM profile: {profile_key}")
+    if profile.get("api_key_env") == "FIREWORKS_API_KEY":
+        return "fireworks"
+    return profile.get("provider")
+
+
+def describe_llm_profiles() -> list:
+    """Describe the available profiles for the settings interface."""
+    return [
+        {
+            "key": key,
+            "model": profile.get("model"),
+            "provider": get_profile_provider(key),
+            "requires_api_key": profile.get("requires_api_key", False),
+        }
+        for key, profile in LLM_PROFILES.items()
+    ]
+
+
+def get_llm_for_profile(profile_key: str, settings: AppSettings, api_key: Optional[str] = None):
+    """Build an LLM client for the given profile.
+
+    A key passed by the caller wins over the environment: it comes from the
+    user's own settings, which is the whole point of letting them supply one.
+    The environment is the fallback so a single-user deployment can keep
+    configuring the key once in .env.
+    """
     from .llm_services import OllamaLLM, DeepSeekLLM, OpenAILLM
-    
+
     if profile_key not in LLM_PROFILES:
         raise ValueError(f"Unknown LLM profile: {profile_key}")
-    
+
     profile = LLM_PROFILES[profile_key]
     provider = profile.get("provider")
     model = profile.get("model")
     base_url = profile.get("base_url")
     requires_api_key = profile.get("requires_api_key", False)
-    
+
     if provider == "ollama":
+        # Runs locally and needs no credentials.
         return OllamaLLM(model=model, base_url=base_url or settings.ollama_base_url)
-    elif provider == "deepseek":
-        api_key = settings.deepseek_api_key
-        if requires_api_key and not api_key:
-            raise ValueError(f"DeepSeek API key is required for profile {profile_key}")
-        return DeepSeekLLM(api_key=api_key, model=model, base_url=base_url)
-    elif provider == "openai":
-        # Bestimme API-Key basierend auf Profil
+
+    if provider == "deepseek":
+        resolved = api_key or settings.deepseek_api_key
+        if requires_api_key and not resolved:
+            raise MissingApiKeyError(profile_key, "DeepSeek")
+        return DeepSeekLLM(api_key=resolved, model=model, base_url=base_url)
+
+    if provider == "openai":
         if profile.get("api_key_env") == "FIREWORKS_API_KEY":
-            api_key = settings.fireworks_api_key
+            resolved = api_key or settings.fireworks_api_key
+            label = "Fireworks"
         else:
-            api_key = settings.openai_api_key
-        
-        if requires_api_key and not api_key:
-            raise ValueError(f"API key is required for profile {profile_key}")
-        return OpenAILLM(api_key=api_key, model=model, base_url=base_url)
-    else:
-        raise ValueError(f"Unknown provider: {provider} for profile {profile_key}")
+            resolved = api_key or settings.openai_api_key
+            label = "OpenAI"
+
+        if requires_api_key and not resolved:
+            raise MissingApiKeyError(profile_key, label)
+        return OpenAILLM(api_key=resolved, model=model, base_url=base_url)
+
+    raise ValueError(f"Unknown provider: {provider} for profile {profile_key}")

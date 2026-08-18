@@ -194,5 +194,22 @@
     "plan_step_completed": "Schritt abgeschlossen",
     "visualization_generating": "Erstelle Visualisierung...",
     "calculation_running": "Berechne Ergebnisse..."
+  },
+  "apiKeys": {
+    "title": "API-Schlüssel",
+    "menuItem": "API-Schlüssel",
+    "intro": "Wähle einen Anbieter und trage deinen eigenen Schlüssel ein. Ohne Schlüssel kann der Assistent nicht antworten.",
+    "privacyNote": "Die Schlüssel bleiben in diesem Browser und werden nur mit der Anfrage gesendet, die sie braucht. Auf dem Server werden sie nie gespeichert.",
+    "stored": "hinterlegt",
+    "onServer": "vom Server bereitgestellt",
+    "notSet": "nicht gesetzt",
+    "getKey": "{{provider}}-Schlüssel anlegen",
+    "saved": "API-Schlüssel gespeichert",
+    "cleared": "API-Schlüssel entfernt",
+    "clearAll": "Alle entfernen",
+    "ollamaNote": "Ollama-Modelle laufen lokal und brauchen keinen Schlüssel.",
+    "missingTitle": "Kein API-Schlüssel",
+    "missingBody": "Hinterlege einen Schlüssel für {{provider}}, um dieses Modell zu nutzen.",
+    "openSettings": "Einstellungen öffnen"
   }
 }

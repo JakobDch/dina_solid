@@ -1,13 +1,14 @@
 import { Button, Dropdown, Avatar, Space } from 'antd';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { LoginOutlined, LogoutOutlined, UserOutlined, DatabaseOutlined, ExportOutlined } from '@ant-design/icons';
+import { LoginOutlined, LogoutOutlined, UserOutlined, DatabaseOutlined, ExportOutlined, KeyOutlined } from '@ant-design/icons';
 import DinaLogo from '../../assets/dina_logo_2026.png';
 import { api } from '../../api/apiClient';
 import { useSolidAuth } from '../../contexts/SolidAuthContext';
 import LoginIssuerModal from '../common/LoginIssuerModal';
 import CatalogSelectModal from '../common/CatalogSelectModal';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import ApiKeySettingsModal from '../common/ApiKeySettingsModal';
 import { useTranslation } from 'react-i18next';
 import { config } from '../../config';
 
@@ -41,6 +42,7 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
   // Modal states
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [catalogModalVisible, setCatalogModalVisible] = useState(false);
+  const [apiKeyModalVisible, setApiKeyModalVisible] = useState(false);
 
   // Fetch latest workspace if no ID in URL
   useEffect(() => {
@@ -298,6 +300,13 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
         >
           {workspaceIdFromUrl ? t('nav.toChat') : t('nav.startFirstChat')}
         </Button>
+        <Button
+          type="text"
+          icon={<KeyOutlined />}
+          onClick={() => setApiKeyModalVisible(true)}
+          aria-label={t('apiKeys.title')}
+          title={t('apiKeys.title')}
+        />
         <LanguageSwitcher />
       </nav>
 
@@ -309,6 +318,10 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
       <CatalogSelectModal
         visible={catalogModalVisible}
         onClose={() => setCatalogModalVisible(false)}
+      />
+      <ApiKeySettingsModal
+        visible={apiKeyModalVisible}
+        onClose={() => setApiKeyModalVisible(false)}
       />
     </header>
   );

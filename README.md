@@ -129,6 +129,22 @@ knowing:
 Models are selected per conversation in the interface; the profiles live in
 `backend/app/config.py`.
 
+## API keys
+
+The assistant needs a key for one language model provider. There are two ways
+to supply one, and the interface is the better default for a shared instance:
+
+- **In the interface.** Open the key icon in the header and paste a DeepSeek,
+  OpenAI or Fireworks key. It is kept in your browser and sent only with the
+  request that needs it - the server never stores it. Each person uses their
+  own key and their own quota.
+- **In the environment.** Set `DEEPSEEK_API_KEY` (or `OPENAI_API_KEY` /
+  `FIREWORKS_API_KEY`) in `.env`. This is convenient for a single-user setup,
+  but everyone sharing that instance then spends the same key.
+
+A key entered in the interface takes precedence over the environment. Models
+served by a local Ollama need no key at all.
+
 ## Language
 
 The interface ships in English and German, chosen from the browser and
