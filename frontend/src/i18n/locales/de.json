@@ -5,10 +5,10 @@
     "retry": "Erneut versuchen",
     "loading": "Wird geladen...",
     "error": "Fehler",
-    "language": "Sprache"
+    "language": "Sprache",
+    "save": "Speichern"
   },
   "nav": {
-    "workspaces": "Arbeitsbereiche",
     "profile": "Profil",
     "toChat": "Zum Chat",
     "startFirstChat": "Starte den ersten Chat",
@@ -51,18 +51,6 @@
     "noDescription": "Keine Beschreibung verfügbar",
     "select": "Auswählen",
     "selected": "Ausgewählt"
-  },
-  "workspaces": {
-    "clone": "Duplizieren",
-    "copySuffix": "(Kopie)",
-    "loadFailed": "Daten konnten nicht geladen werden.",
-    "cloned": "Arbeitsbereich dupliziert.",
-    "cloneFailed": "Duplizieren fehlgeschlagen.",
-    "deleted": "Arbeitsbereich gelöscht.",
-    "deleteFailed": "Löschen fehlgeschlagen.",
-    "open": "Öffnen",
-    "deleteConfirm": "Arbeitsbereich löschen?",
-    "deleteHint": "Die zugehörigen Chats werden mitgelöscht."
   },
   "chat": {
     "placeholder": "Stelle deine nächste Frage...",

@@ -12,11 +12,6 @@ import ApiKeySettingsModal from '../common/ApiKeySettingsModal';
 import { useTranslation } from 'react-i18next';
 import { config } from '../../config';
 
-interface Workspace {
-  id: string;
-  title: string;
-  created_at: string;
-}
 
 interface HeaderBarProps {
   showNavigation?: boolean;
@@ -44,24 +39,22 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
   const [catalogModalVisible, setCatalogModalVisible] = useState(false);
   const [apiKeyModalVisible, setApiKeyModalVisible] = useState(false);
 
-  // Fetch latest workspace if no ID in URL
+  // The header can be shown outside a workspace route, so resolve the default
+  // one to keep the chat link working. Workspaces are not user-facing.
   useEffect(() => {
-    if (!workspaceIdFromUrl) {
-      const fetchLatestWorkspace = async () => {
-        try {
-          const res = await api.get<Workspace[]>('/api/v1/workspaces');
-          if (res.data && res.data.length > 0) {
-            const sorted = [...res.data].sort((a, b) =>
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
-            setLatestWorkspaceId(sorted[0].id);
-          }
-        } catch (err) {
-          console.error('Error fetching workspaces:', err);
-        }
-      };
-      fetchLatestWorkspace();
-    }
+    if (workspaceIdFromUrl) return;
+
+    let cancelled = false;
+    api
+      .get<{ id: string }>('/api/v1/workspaces/default')
+      .then((response) => {
+        if (!cancelled) setLatestWorkspaceId(response.data.id);
+      })
+      .catch((error) => console.error('Could not resolve the default workspace:', error));
+
+    return () => {
+      cancelled = true;
+    };
   }, [workspaceIdFromUrl]);
 
   // A catalog must be selected before the agent can query the dataspace, so
@@ -181,10 +174,6 @@ export default function HeaderBar({ showNavigation = true }: HeaderBarProps) {
             </NavLink>
           </>
         )}
-        <NavLink onClick={() => navigate('/workspaces')} active={location.pathname === '/workspaces'}>
-          {t('nav.workspaces')}
-        </NavLink>
-
         {/* Catalog selection - required before the agent can query the dataspace */}
         {isLoggedIn && catalogId === null && (
           <Button

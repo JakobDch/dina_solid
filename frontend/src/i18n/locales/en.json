@@ -5,10 +5,10 @@
     "retry": "Try again",
     "loading": "Loading...",
     "error": "Error",
-    "language": "Language"
+    "language": "Language",
+    "save": "Save"
   },
   "nav": {
-    "workspaces": "Workspaces",
     "profile": "Profile",
     "toChat": "Go to chat",
     "startFirstChat": "Start your first chat",
@@ -51,18 +51,6 @@
     "noDescription": "No description available",
     "select": "Select",
     "selected": "Selected"
-  },
-  "workspaces": {
-    "clone": "Duplicate",
-    "copySuffix": "(copy)",
-    "loadFailed": "Data could not be loaded.",
-    "cloned": "Workspace duplicated.",
-    "cloneFailed": "Duplicating the workspace failed.",
-    "deleted": "Workspace deleted.",
-    "deleteFailed": "Deleting the workspace failed.",
-    "open": "Open",
-    "deleteConfirm": "Delete this workspace?",
-    "deleteHint": "Its chat sessions are removed with it."
   },
   "chat": {
     "placeholder": "Ask your next question...",

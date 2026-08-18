@@ -18,7 +18,7 @@ import AppLoadingScreen from './components/AppLoadingScreen';
 import Footer from './components/layout/Footer';
 
 import LandingPage from './pages/LandingPage';
-import WorkspacesPage from './pages/WorkspacesPage';
+import ChatEntryPage from './pages/ChatEntryPage';
 import HeaderBar from './components/layout/HeaderBar';
 import { ChatProvider } from './contexts/ChatContext';
 import { ProfileProvider } from './contexts/ProfileContext';
@@ -232,15 +232,7 @@ function ThemedApp() {
                     {/* Landing page */}
                     <Route path="/" element={<LandingPage />} />
                     {/* Workspace overview */}
-                    <Route path="/workspaces" element={
-                      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                        <HeaderBar />
-                        <div style={{ flex: 1 }}>
-                          <WorkspacesPage />
-                        </div>
-                        <Footer />
-                      </div>
-                    } />
+                    <Route path="/workspaces" element={<ChatEntryPage />} />
                     <Route path="/workspace/:id" element={
                       <WorkspacePage><ChatInterface /></WorkspacePage>
                     } />

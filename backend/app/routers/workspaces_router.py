@@ -1,11 +1,12 @@
 """
 Workspaces Router
 
-A workspace groups the chat sessions of one line of work. It is the unit the
-frontend routes on (/workspace/:id) and the key chat sessions are stored under.
+A workspace groups chat sessions. It used to hold uploaded files as well, but
+the data now lives in the Solid dataspace, so nothing is stored per workspace
+any more and users are never asked to create one.
 
-Data itself lives in the Solid dataspace, so a workspace carries no files - it
-is purely an organisational container.
+What remains is the key that conversations are filed under. The interface calls
+`/default` on startup and works with whatever comes back.
 """
 
 import logging
@@ -21,6 +22,30 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/workspaces", tags=["Workspaces"])
 
+DEFAULT_WORKSPACE_TITLE = "My conversations"
+
+
+@router.get("/default", summary="Get or create the default workspace")
+async def get_default_workspace(db: Session = Depends(get_session)) -> Workspace:
+    """Return a workspace to file conversations under, creating one if needed.
+
+    Workspaces are an implementation detail now: the interface needs an id to
+    attach sessions to, but the user never picks one. Reusing the oldest keeps
+    a returning visitor's history in one place instead of scattering it across
+    a new workspace per visit.
+    """
+    existing = db.exec(select(Workspace).order_by(Workspace.created.asc())).first()
+    if existing:
+        return existing
+
+    workspace = Workspace(title=DEFAULT_WORKSPACE_TITLE)
+    db.add(workspace)
+    db.commit()
+    db.refresh(workspace)
+
+    logger.info(f"Created the default workspace {workspace.id}")
+    return workspace
+
 
 @router.get("", summary="List all workspaces")
 async def list_workspaces(db: Session = Depends(get_session)) -> List[Workspace]:
@@ -34,12 +59,7 @@ async def create_workspace(
     payload: WorkspaceCreate,
     db: Session = Depends(get_session),
 ) -> Workspace:
-    """Create a workspace.
-
-    `clone_from_id` is accepted for compatibility with the existing frontend but
-    only copies the title and description: there are no workspace-local files to
-    duplicate now that data is read from the dataspace.
-    """
+    """Create a workspace."""
     workspace = Workspace(title=payload.title, description=payload.description)
 
     db.add(workspace)
