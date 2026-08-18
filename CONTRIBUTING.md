@@ -33,11 +33,30 @@ There is no meaningful automated test suite yet. Adding one is welcome —
 
 Until then, changes to the query path are best verified by hand:
 
-1. Sign in with a Solid pod and select a catalog.
+1. Sign in with a Solid pod, so the token reaches the catalog.
 2. Ask something that needs data, and confirm the browser receives a
    `comunica_execution_required` event carrying a query and dataset URLs.
 3. Ask a follow-up, and confirm it reuses the cached models instead of
    searching the catalog again.
+
+## When a change does not show up
+
+The frontend container keeps `node_modules` in an anonymous volume, and Vite
+caches transformed modules inside it. That cache survives `docker compose
+restart`, so a deleted or renamed component can still be served after the
+source is gone. If the interface disagrees with the code, clear it:
+
+```bash
+docker compose exec frontend rm -rf /app/node_modules/.vite
+docker compose restart frontend
+```
+
+Backend containers read their environment from `.env` at creation time. After
+editing that file, recreate rather than restart:
+
+```bash
+docker compose up -d --force-recreate backend
+```
 
 ## Style
 
