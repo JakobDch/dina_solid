@@ -42,16 +42,23 @@ PREFIX hdpe:   <http://example.org/hdpe-pipe-ontology#>
 """
 
 
-def add_correct_prefixes(query_string: str) -> str:
-    """
-    Removes all existing PREFIX declarations from the beginning of a SPARQL query
-    and replaces them with a standardized, correct block.
-    
+def add_correct_prefixes(query_string: str, model_content: str = "") -> str:
+    """Normalise the PREFIX block of a generated query.
+
+    The well-known prefixes are always declared, because a model may rely on one
+    without naming it. Prefixes the query or the model declare are kept as well:
+    datasets bring their own vocabularies, and discarding those declarations
+    left every query against them unresolvable. Where a name is defined twice,
+    the query's own binding wins - it is what its triple patterns were written
+    against.
+
     Args:
-        query_string: The SPARQL query string
-        
+        query_string: the generated query
+        model_content: the semantic model, so prefixes it declares survive even
+            when the query omitted them
+
     Returns:
-        The query with corrected prefixes
+        The query with a complete prefix block.
     """
     if not query_string:
         return ""
@@ -66,11 +73,20 @@ def add_correct_prefixes(query_string: str) -> str:
     import unicodedata
     query_string = ''.join(char for char in query_string if unicodedata.category(char) != 'Cc' or char in '\t\n\r')
 
+    declaration = re.compile(r"PREFIX\s+([\w\-]*):\s*<([^>]*)>", flags=re.IGNORECASE)
+
+    # Start from the well-known prefixes, then let the model and finally the
+    # query itself override, so a dataset's own vocabulary stays resolvable.
+    prefixes = dict(declaration.findall(CORRECT_SPARQL_PREFIXES))
+    if model_content:
+        prefixes.update(re.findall(r"@prefix\s+([\w\-]*):\s*<([^>]*)>", model_content))
+    prefixes.update(declaration.findall(query_string))
+
     prefix_pattern = re.compile(r"^(\s*PREFIX\s+[\w\-]*:\s*<[^>]*>\s*)+", flags=re.IGNORECASE)
-    
     query_body = prefix_pattern.sub("", query_string.strip()).strip()
-    
-    return f"{CORRECT_SPARQL_PREFIXES.strip()}\n\n{query_body}"
+
+    block = "\n".join(f"PREFIX {name}: <{uri}>" for name, uri in sorted(prefixes.items()))
+    return f"{block}\n\n{query_body}"
 
 
 def robust_sparql_sanitize(sparql_candidate: str, request_id: str) -> str:
@@ -291,7 +307,7 @@ async def generate_sparql_query(
     )
     
     sanitized_output = robust_sparql_sanitize(structured_output, request_id)
-    final_sparql_query = add_correct_prefixes(sanitized_output)
+    final_sparql_query = add_correct_prefixes(sanitized_output, model_info_blocks)
     
     logger.info(f"[{request_id}] Final, prefix-corrected SPARQL Query:\n{final_sparql_query}")
     
@@ -411,7 +427,9 @@ async def correct_sparql_syntax_errors(
             }
         
         # Add correct prefixes
-        corrected_query_with_prefixes = add_correct_prefixes(corrected_query)
+        corrected_query_with_prefixes = add_correct_prefixes(
+            corrected_query, semantic_models_content
+        )
         
         logger.info(f"[{request_id}] Generated corrected query: {corrected_query_with_prefixes[:100]}...")
         

@@ -26,6 +26,15 @@ DCAT = Namespace("http://www.w3.org/ns/dcat#")
 LDP = Namespace("http://www.w3.org/ns/ldp#")
 VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
 
+# Content types accepted when fetching RDF from a pod.
+#
+# Turtle is preferred, but a pod serves a file with the content type it was
+# uploaded under and will not convert it: asking only for text/turtle makes it
+# answer 501 for anything stored as application/octet-stream. The body is
+# parsed with rdflib regardless, so stating a preference without insisting on
+# it costs nothing and keeps such files readable.
+RDF_ACCEPT = "text/turtle;q=1.0, application/ld+json;q=0.8, */*;q=0.5"
+
 # Catalog endpoints are derived from the dataspace configuration; see
 # app/config.py for the environment variables that control them. The module
 # level names are kept so existing call sites and imports stay valid.
@@ -206,7 +215,7 @@ class CatalogClient:
 
     def _get_auth_headers(self) -> Dict[str, str]:
         """Build the request headers, adding Authorization when a token is set."""
-        headers = {"Accept": "text/turtle"}
+        headers = {"Accept": RDF_ACCEPT}
         if self._auth_token:
             headers["Authorization"] = f"Bearer {self._auth_token}"
         return headers
@@ -386,7 +395,7 @@ class CatalogClient:
         try:
             # Request Turtle format explicitly
             headers = self._get_auth_headers()
-            headers["Accept"] = "text/turtle"
+            headers["Accept"] = RDF_ACCEPT
 
             response = self._get_client().get(self._registry_url, headers=headers)
             response.raise_for_status()
@@ -425,7 +434,7 @@ class CatalogClient:
         try:
             client = await self._get_async_client()
             # Request Turtle format explicitly
-            headers = {"Accept": "text/turtle"}
+            headers = {"Accept": RDF_ACCEPT}
             if self._auth_token:
                 headers["Authorization"] = f"Bearer {self._auth_token}"
 
