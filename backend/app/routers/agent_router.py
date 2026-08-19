@@ -1029,102 +1029,6 @@ async def receive_comunica_results(
         )
 
 
-async def plan_query_refinement(context, results, plan_data, llm_instance, session_id):
-    """Decide whether an empty result deserves another attempt, and prepare it.
-
-    Two rounds are possible, neither visible in the conversation:
-
-    1. The failed query is read for the properties it filtered on, and a probe
-       asks which literals those properties actually hold.
-    2. Armed with those values the query is written again, filtering on terms
-       that exist.
-
-    Returns None when the results are usable, when nothing suggests a fix, or
-    when the budget is spent - in each case the caller reports what it has.
-    """
-    from ..query_refinement import (
-        MAX_QUERY_REFINEMENTS,
-        build_retry_instruction,
-        build_value_probe_query,
-        extract_filtered_properties,
-        prefixes_of,
-        summarise_observed_values,
-    )
-    from ..sparql_generation import generate_sparql_query
-
-    def comunica_event(query):
-        return {
-            "sparql_query": query,
-            "dataset_urls": context.last_dataset_urls,
-            "session_id": session_id,
-            "user_query": context.last_user_query,
-        }
-
-    # Second round: a probe has answered, so rewrite the original query.
-    if plan_data.get("probe_for_query"):
-        failed_query = plan_data["probe_for_query"]
-        observed = summarise_observed_values(results)
-        logger.info(f"[Refine] Values observed for {list(observed)}")
-
-        if not observed:
-            return None
-
-        instruction = build_retry_instruction(observed, failed_query)
-        try:
-            retry = await generate_sparql_query(
-                user_query=f"{context.last_user_query}\n\n{instruction}",
-                model_info_blocks=context.model_info_blocks or "",
-                llm_instance=llm_instance,
-                request_id="query_refinement",
-            )
-        except Exception as exc:
-            logger.warning(f"[Refine] Could not rewrite the query: {exc}")
-            return None
-
-        new_query = retry.get("sparql_query") if isinstance(retry, dict) else None
-        if not new_query or new_query.strip() == failed_query.strip():
-            return None
-
-        context.last_sparql_query = new_query
-        return {
-            "waiting_state": {"probe_for_query": None, "results": [], "variables": []},
-            "status_event": {
-                "message": "Refining the query against the values found in the data...",
-                "step_id": "query_refinement",
-            },
-            "comunica_event": comunica_event(new_query),
-        }
-
-    # First round: only an empty result is worth investigating.
-    if results or not context.last_dataset_urls:
-        return None
-    if context.query_attempts >= MAX_QUERY_REFINEMENTS:
-        logger.info("[Refine] Budget spent, reporting the empty result")
-        return None
-
-    failed_query = context.last_sparql_query or ""
-    properties = extract_filtered_properties(failed_query)
-    if not properties:
-        # Nothing was filtered, so the data genuinely holds no answer.
-        return None
-
-    probe = build_value_probe_query(properties, prefixes_of(failed_query))
-    if not probe:
-        return None
-
-    context.query_attempts += 1
-    logger.info(f"[Refine] Empty result, probing values of {properties}")
-
-    return {
-        "waiting_state": {"probe_for_query": failed_query, "results": [], "variables": []},
-        "status_event": {
-            "message": "No matches yet - checking which values the data contains...",
-            "step_id": "query_probe",
-        },
-        "comunica_event": comunica_event(probe),
-    }
-
-
 @router.get("/continue-plan", summary="Continue agent plan after Comunica execution")
 async def continue_plan_after_comunica(
     session_id: str = Query(..., description="Session ID"),
@@ -1177,29 +1081,6 @@ async def continue_plan_after_comunica(
         # Store Comunica results in context
         context.last_sparql_results = results
         context.last_sparql_variables = variables
-
-        # An empty result is often a filter on a value the data spells
-        # differently, so look at what is actually there and try again before
-        # reporting back. Both rounds stay between here and the browser.
-        refinement = await plan_query_refinement(
-            context=context,
-            results=results,
-            plan_data=plan_data,
-            llm_instance=llm_instance,
-            session_id=session_id,
-        )
-        if refinement:
-            _comunica_waiting_plans[session_id].update(refinement["waiting_state"])
-
-            async def refine_generator():
-                from ..utils import format_sse_event
-
-                yield await format_sse_event(refinement["status_event"], "pipeline_update")
-                yield await format_sse_event(
-                    refinement["comunica_event"], "comunica_execution_required"
-                )
-
-            return StreamingResponse(refine_generator(), media_type="text/event-stream")
 
         # Also add to results_history so that steps using "latest" can find them
         if results:

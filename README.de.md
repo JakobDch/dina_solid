@@ -3,10 +3,10 @@
 Stelle Fragen an einen [Solid](https://solidproject.org/)-Datenraum in
 natürlicher Sprache und bekomme Antworten aus den Daten selbst.
 
-DINa übersetzt eine Frage in eine SPARQL-Query, führt sie gegen die Pods aus,
-in denen die Daten liegen, und antwortet auf Basis des Ergebnisses. Die Daten
-werden dabei nicht kopiert: Die Abfrage läuft im Browser, direkt gegen die
-Pods, für die der Nutzer eine Leseberechtigung hat.
+DINa erarbeitet zu einer Frage eine SPARQL-Query, führt sie gegen die Pods
+aus, in denen die Daten liegen, und antwortet auf Basis des Ergebnisses. Alles,
+was gelesen wird, wird mit den Zugangsdaten des Nutzers gelesen — eigene Daten
+hält die Anwendung nicht.
 
 *[English version](README.md)*
 
@@ -22,7 +22,8 @@ Browser ──SSE──▶ GET /api/v1/agent/chat
                    ├─ 1. Plan       der Agent zerlegt die Frage in Schritte
                    ├─ 2. Suche      er durchsucht den DCAT-Katalog des Datenraums
                    ├─ 3. Laden      er lädt die semantischen Modelle der besten Treffer
-                   └─ 4. Erzeugen   ein Sprachmodell schreibt die SPARQL-Query
+                   └─ 4. Erarbeiten der Agent fragt die Daten ab, bis die
+                   │                Antwort trägt, und passt dabei an
                                     │
                    ◀────────────────┘  Query + Dataset-URLs
 Browser ──────▶ Comunica führt die Query gegen die Solid-Pods aus
@@ -33,12 +34,17 @@ Browser ──POST─▶ /api/v1/agent/comunica-results
 
 Daraus folgen zwei Eigenschaften:
 
-- **Das Backend führt selbst kein SPARQL aus.** Es sieht ausschließlich
-  Metadaten und die Ergebnisse, die der Browser zurückschickt. Die Daten
-  bleiben in den Pods.
-- **Die Zugriffskontrolle bleibt bei Solid.** Abfragen laufen mit den
-  Zugangsdaten des Nutzers und erreichen genau das, wofür seine WebID
-  berechtigt ist.
+- **Die Zugriffskontrolle bleibt bei Solid.** Jeder Lesezugriff läuft mit den
+  Zugangsdaten des Nutzers; die Anwendung erreicht genau das, wofür seine
+  WebID berechtigt ist, und nichts darüber hinaus.
+- **Die finale Abfrage läuft im Browser**, direkt gegen die Pods.
+
+Um zu dieser Abfrage zu kommen, liest der Agent die ausgewählten Datensätze
+serverseitig: Er fragt sie mehrfach ab, sieht jedes Ergebnis und passt an. Nur
+so kann er bemerken, dass ein Filter nichts gefunden hat, und es anders
+versuchen. Die Daten laufen dabei durch das Backend — gespeichert werden sie
+nicht, gesehen schon. Wem das nicht passt, sollte das Backend dort betreiben,
+wo den Daten ohnehin vertraut wird.
 
 Die Katalogsuche ist bewusst günstig gehalten: Metadaten zu durchsuchen kostet
 nichts, das Laden eines semantischen Modells dagegen einen Netzwerkzugriff.

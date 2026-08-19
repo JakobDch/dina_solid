@@ -3,10 +3,9 @@
 Ask questions about a [Solid](https://solidproject.org/) dataspace in plain
 language and get answers back from the data itself.
 
-DINa translates a question into a SPARQL query, runs it against the pods that
-hold the data, and answers from the result. It never copies the data: queries
-are executed in the browser, directly against the pods the user is authorised
-to read.
+DINa works out a SPARQL query for the question, runs it against the pods that
+hold the data, and answers from the result. Everything it reads, it reads with
+the user's own credentials - it holds no data of its own.
 
 *[Deutsche Fassung](README.de.md)*
 
@@ -22,7 +21,8 @@ Browser ──SSE──▶ GET /api/v1/agent/chat
                    ├─ 1. plan       the agent breaks the question into steps
                    ├─ 2. search     it searches the DCAT catalog of the dataspace
                    ├─ 3. fetch      it loads the semantic models of the best candidates
-                   └─ 4. generate   a language model writes a SPARQL query
+                   └─ 4. work out   the agent queries the data until the
+                   │                answer holds up, adjusting as it goes
                                     │
                    ◀────────────────┘  query + dataset URLs
 Browser ──────▶ Comunica runs the query against the Solid pods
@@ -33,10 +33,17 @@ Browser ──POST─▶ /api/v1/agent/comunica-results
 
 Two consequences follow from this shape:
 
-- **The backend never executes SPARQL.** It only ever sees metadata and the
-  results the browser sends back. The data stays in the pods.
-- **Access control stays with Solid.** Queries run under the user's own
-  credentials, so they can reach exactly what their WebID is allowed to reach.
+- **Access control stays with Solid.** Every read uses the user's own
+  credentials, so the application reaches exactly what their WebID is allowed
+  to reach and nothing more.
+- **The final query runs in the browser**, directly against the pods.
+
+While working out that query the agent reads the selected datasets on the
+server: it queries them repeatedly, sees each result, and adjusts. That is what
+lets it notice that a filter found nothing and try another. The data therefore
+passes through the backend during exploration - it is not stored, but it is
+seen. If that trade is wrong for your deployment, run the backend where the
+data is already trusted to be.
 
 Catalog search is deliberately cheap. Dataset metadata is free to scan, while
 fetching a semantic model costs a network round trip, so the agent is prompted

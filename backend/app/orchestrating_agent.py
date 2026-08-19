@@ -337,8 +337,8 @@ class AgentContext:
     catalog_url: str = ""  # External catalog API URL
     solid_auth_token: Optional[str] = None  # Solid OIDC access token for authenticated catalog API requests
     last_dataset_urls: List[Dict[str, str]] = field(default_factory=list)  # Dataset URLs for Comunica execution
-    query_attempts: int = 0  # Refinement rounds spent on the current question
-    observed_values: Dict[str, List[str]] = field(default_factory=dict)  # Literals seen in the data, per property
+    exploration_summary: str = ""  # What the agent concluded while working out the query
+    exploration_step_count: int = 0  # Queries it ran to get there
     # === NEW: Visualization and Calculation History ===
     visualization_history: List['VisualizationHistoryEntry'] = field(default_factory=list)
     calculation_history: List['CalculationHistoryEntry'] = field(default_factory=list)
@@ -2159,33 +2159,53 @@ Reply with GLEICHE_DATEN or ANDERE_DATEN and nothing else:"""
                 "request_timestamp": self.request_ts
             }, "pipeline_update")
 
-            sparql_result = await generate_sparql_query(
+            # Work out the query by querying. A semantic model describes the
+            # shape of the data, not its contents, so a query written from the
+            # question alone frequently misses - a filter guessed from German
+            # wording will not match data written in English. The agent runs as
+            # many queries as it needs against the loaded datasets, sees each
+            # result, and stops when it is satisfied.
+            from .query_exploration import explore
+
+            progress: List[str] = []
+
+            async def note_step(number: int, thought: str) -> None:
+                progress.append(f"{number}. {thought}" if thought else f"Query {number}")
+
+            exploration = await explore(
                 user_query=user_query,
-                model_info_blocks=combined_model_info,
-                model_check_hints="",
-                llm_instance=self.llm,
-                internal_reasoning_enabled=agentic_reasoning_enabled,
-                few_shot_prompting_enabled=few_shot_prompting_enabled,
-                request_id=self.request_ts
+                dataset_urls=[ds.url for ds in retrieval_result.dataset_urls],
+                model_content=combined_model_info,
+                llm=self.llm,
+                auth_token=auth_token,
+                on_step=note_step,
             )
 
-            if not sparql_result or not sparql_result.get('sparql_query'):
+            for line in progress:
                 yield await format_sse_event({
-                    "message": "SPARQL generation failed",
+                    "message": line,
+                    "step_id": "query_exploration",
+                    "request_timestamp": self.request_ts
+                }, "pipeline_update")
+
+            if not exploration.query:
+                yield await format_sse_event({
+                    "message": exploration.message or "No query returned matching data.",
                     "step_id": "sparql_generation_failed",
                     "is_error": True,
                     "request_timestamp": self.request_ts
                 }, "pipeline_error")
                 return
 
-            sparql_query = sparql_result['sparql_query']
+            sparql_query = exploration.query
             self.context.last_sparql_query = sparql_query
+            self.context.exploration_summary = exploration.message
+            self.context.exploration_step_count = len(exploration.steps)
 
             yield await format_sse_event({
-                "message": "SPARQL query generated",
+                "message": f"Query settled after {len(exploration.steps)} attempt(s)",
                 "step_id": "sparql_generated",
                 "sparql_query": sparql_query,
-                "thoughts": sparql_result.get('thoughts', ''),
                 "request_timestamp": self.request_ts
             }, "pipeline_update")
 
