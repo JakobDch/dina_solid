@@ -7,6 +7,7 @@ to the appropriate handlers (extraction, follow-up, corpus info, visualization).
 
 import json
 import logging
+import re
 import asyncio
 import uuid
 import io
@@ -100,6 +101,7 @@ class ExecutionPlan:
 # Context management constants
 MAX_SPARQL_RESULTS_IN_CONTEXT = 100  # Results above this threshold are cached
 MAX_CONVERSATION_HISTORY = 10  # Sliding window for conversation history
+
 RESULTS_CACHE_TTL = 3600  # 1 hour TTL for cached results
 
 
@@ -335,6 +337,8 @@ class AgentContext:
     catalog_url: str = ""  # External catalog API URL
     solid_auth_token: Optional[str] = None  # Solid OIDC access token for authenticated catalog API requests
     last_dataset_urls: List[Dict[str, str]] = field(default_factory=list)  # Dataset URLs for Comunica execution
+    query_attempts: int = 0  # Refinement rounds spent on the current question
+    observed_values: Dict[str, List[str]] = field(default_factory=dict)  # Literals seen in the data, per property
     # === NEW: Visualization and Calculation History ===
     visualization_history: List['VisualizationHistoryEntry'] = field(default_factory=list)
     calculation_history: List['CalculationHistoryEntry'] = field(default_factory=list)
