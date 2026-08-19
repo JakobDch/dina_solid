@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QueryEngine } from '@comunica/query-sparql';
 import { useSolidAuth } from '../contexts/SolidAuthContext';
@@ -17,6 +17,49 @@ interface UseComunicaQueryReturn {
   isLoggedIn: boolean;
 }
 
+/**
+ * Media types Comunica has no parser for, but which in practice hold RDF.
+ *
+ * A Solid pod serves a file with the content type it was uploaded under, so a
+ * Turtle file added through a generic upload arrives as
+ * application/octet-stream and Comunica refuses it. Correcting the type by
+ * file extension keeps such datasets queryable.
+ */
+const OPAQUE_MEDIA_TYPES = ['application/octet-stream', 'binary/octet-stream', ''];
+
+const EXTENSION_MEDIA_TYPES: Array<[RegExp, string]> = [
+  [/\.ttl(\?|$)/i, 'text/turtle'],
+  [/\.nt(\?|$)/i, 'application/n-triples'],
+  [/\.nq(\?|$)/i, 'application/n-quads'],
+  [/\.trig(\?|$)/i, 'application/trig'],
+  [/\.(jsonld|json)(\?|$)/i, 'application/ld+json'],
+  [/\.rdf(\?|$)/i, 'application/rdf+xml'],
+];
+
+/** Wrap a fetch so an opaque content type is replaced by one implied by the URL. */
+function withRdfContentType(inner: typeof fetch): typeof fetch {
+  return async (input, init) => {
+    const response = await inner(input, init);
+
+    const url = typeof input === 'string' ? input : (input as Request).url ?? String(input);
+    const declared = (response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+    if (!OPAQUE_MEDIA_TYPES.includes(declared)) return response;
+
+    const match = EXTENSION_MEDIA_TYPES.find(([pattern]) => pattern.test(url));
+    if (!match) return response;
+
+    // Headers are immutable on a Response, so hand back a copy that carries the
+    // corrected type. The body is passed through untouched.
+    const headers = new Headers(response.headers);
+    headers.set('content-type', match[1]);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  };
+}
+
 // Singleton query engine instance to avoid re-initialization overhead
 let queryEngineInstance: QueryEngine | null = null;
 
@@ -31,6 +74,9 @@ export function useComunicaQuery(): UseComunicaQueryReturn {
   const { t } = useTranslation();
   const { isLoggedIn, fetch: authenticatedFetch } = useSolidAuth();
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Comunica picks its parser from the response content type, so the fetch it
+  // is given corrects an opaque one first.
+  const rdfFetch = useMemo(() => withRdfContentType(authenticatedFetch), [authenticatedFetch]);
   const isQueryingRef = useRef(false);
 
   const executeQuery = useCallback(
@@ -72,7 +118,7 @@ export function useComunicaQuery(): UseComunicaQueryReturn {
           const bindingsStream = await engine.queryBindings(sparqlQuery, {
             sources,
             // Use authenticated fetch for Solid Pod access
-            fetch: authenticatedFetch,
+            fetch: rdfFetch,
           });
 
           // Get variable names from the query
@@ -117,7 +163,7 @@ export function useComunicaQuery(): UseComunicaQueryReturn {
           // Execute ASK query
           const askResult = await engine.queryBoolean(sparqlQuery, {
             sources,
-            fetch: authenticatedFetch,
+            fetch: rdfFetch,
           });
 
           variables = ['result'];
@@ -126,7 +172,7 @@ export function useComunicaQuery(): UseComunicaQueryReturn {
           // Execute CONSTRUCT/DESCRIBE query - returns quads
           const quadsStream = await engine.queryQuads(sparqlQuery, {
             sources,
-            fetch: authenticatedFetch,
+            fetch: rdfFetch,
           });
 
           variables = ['subject', 'predicate', 'object'];
@@ -174,7 +220,7 @@ export function useComunicaQuery(): UseComunicaQueryReturn {
         abortControllerRef.current = null;
       }
     },
-    [authenticatedFetch, t]
+    [rdfFetch, t]
   );
 
   const cancelQuery = useCallback(() => {
